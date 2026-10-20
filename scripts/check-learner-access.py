@@ -7,16 +7,18 @@ import sys
 import re
 
 
-def check(namespace, run=subprocess.run):
+def check(namespace, run=subprocess.run, model_secret="sloscope-model"):
     if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', namespace):
         raise ValueError('Use the assigned namespace DNS label')
+    if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', model_secret):
+        raise ValueError('Use the configured model Secret name')
     cases = []
     for name in ('sloscope', 'checkout-api', 'checkout-traffic', 'sloscope-prometheus'):
         cases.append(('get', 'deployments.apps/'+name, True))
     cases += [('list', 'pods', True), ('get', 'services/sloscope', True),
         ('create', 'pods/portforward', True), ('get', 'configmaps/sloscope-scenario', True),
         ('patch', 'configmaps/sloscope-scenario', True), ('get', 'secrets', False),
-        ('list', 'secrets', False), ('create', 'pods/exec', False), ('create', 'pods', False),
+        ('list', 'secrets', False), ('get', 'secrets/'+model_secret, False), ('create', 'pods/exec', False), ('create', 'pods', False),
         ('patch', 'deployments.apps/sloscope', False), ('patch', 'configmaps/sloscope-prometheus', False),
         ('create', 'rolebindings.rbac.authorization.k8s.io', False)]
     results = []
@@ -39,8 +41,9 @@ def check(namespace, run=subprocess.run):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--namespace', required=True)
+    parser.add_argument('--model-secret', default='sloscope-model')
     args = parser.parse_args()
-    try: result = check(args.namespace)
+    try: result = check(args.namespace, model_secret=args.model_secret)
     except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
         parser.exit(2, type(exc).__name__+': learner permission check could not complete\n')
     print(json.dumps(result, indent=2))

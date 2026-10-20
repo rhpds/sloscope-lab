@@ -27,7 +27,7 @@ The lab follows a repeated pattern:
 
 Start with xref:01-overview.adoc[the business assignment], then xref:02-how-it-works.adoc[the short reliability primer and architecture]. Prepare the workspace only after you can explain how the pieces fit together.
 
-The core path has an estimated duration of about 100 minutes, plus 20 minutes for optional Model Context Protocol (MCP) integration. These are author estimates pending a learner pilot.
+The core path has an estimated duration of about 100 minutes, plus 20 minutes for optional Model Context Protocol (MCP) integration and 45 minutes for the separately provisioned live telemetry extension. These are author estimates pending a learner pilot.
 
 IMPORTANT: Exercises use synthetic telemetry and recorded examples. You can practice a real review method, but these results do not establish customer impact, model quality, live alert behavior, or readiness to change a production service.
 

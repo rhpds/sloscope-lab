@@ -30,7 +30,7 @@ Before entering the live module, run from the assigned terminal:
 python3.11 scripts/check-learner-access.py --namespace YOUR_ASSIGNED_NAMESPACE
 ```
 
-The preflight uses authorization queries and exits nonzero for missing rights, excessive tested rights, authentication errors or ambiguous results. It does not enumerate every possible permission or prove cluster isolation. Review all inherited roles separately. It reads no Secret, opens no shell and changes no configuration. Actual forwarding, scenario patching and HTTP collection still need the learner walk.
+The preflight uses authorization queries and exits nonzero for missing rights, excessive tested rights, authentication errors or ambiguous results. It does not enumerate every possible permission or prove cluster isolation. Review all inherited roles separately. It checks generic Secret access and the specific model Secret name; supply `--model-secret` if the allocation uses a name other than `sloscope-model`. It reads no Secret, opens no shell and changes no configuration. Actual forwarding, scenario patching and HTTP collection still need the learner walk.
 
 Two terminal sessions must share a writable checkout/workspace and loopback host. Verify Python 3.11, Git and `oc` before the pilot. One terminal holds the private forward while the other runs the HTTP client. A remote terminal's loopback address is not reachable from a desktop browser; the live terminal path requires no public application Route. Broader browser access would need a separate reviewed authentication design.
 

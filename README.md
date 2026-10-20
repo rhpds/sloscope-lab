@@ -2,7 +2,7 @@
 
 An RHDP Showroom lab for SREs and platform engineers making checkout reliability decisions with a service owner. This is the lab track, separate from AI Quickstarts work.
 
-The core path starts with the checkout business decision, a short SLI/SLO/SLA primer, and event-flow/infrastructure diagrams before setup. Learners build a decision brief through Learn, Show, Do, Verify, and Takeaway sections: inspect synthetic telemetry, preserve a reference, measure controlled drift, exercise abstention, and review an export boundary. The core duration is estimated at 100 minutes, pending a learner pilot. The optional 20-minute MCP extension reviews inline artifacts through a real stdio client. Neither path establishes live model quality, alert behavior, or RHDP publication.
+The core path starts with the checkout business decision, a short SLI/SLO/SLA primer, and event-flow/infrastructure diagrams before setup. Learners build a decision brief through Learn, Show, Do, Verify, and Takeaway sections: inspect synthetic telemetry, preserve a reference, measure controlled drift, exercise abstention, and review an export boundary. The core duration is estimated at 100 minutes, pending a learner pilot. The optional 20-minute MCP extension reviews inline artifacts through a real stdio client. The separately provisioned live extension adds an estimated 45 minutes for permission checks, measured regression, optional classification and recovery. The full 165-minute outline requests a 3-hour catalog window; pacing still needs a human pilot. Core/MCP exercises alone do not establish live model quality, alert behavior, or RHDP publication.
 
 ## Try the content
 

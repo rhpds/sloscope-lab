@@ -37,8 +37,8 @@ In terminal 1:
 ----
 SLOSCOPE_NAMESPACE='{namespace}'
 export SLOSCOPE_NAMESPACE
-python3.11 scripts/check-learner-access.py --namespace "$SLOSCOPE_NAMESPACE"
-oc get deployment sloscope checkout-api checkout-traffic sloscope-prometheus -n "$SLOSCOPE_NAMESPACE"
+python3.11 scripts/check-learner-access.py --namespace "$SLOSCOPE_NAMESPACE" &&
+oc get deployment sloscope checkout-api checkout-traffic sloscope-prometheus -n "$SLOSCOPE_NAMESPACE" &&
 oc port-forward --address 127.0.0.1 -n "$SLOSCOPE_NAMESPACE" service/sloscope 18080:8080
 ----
 
@@ -109,7 +109,7 @@ python3.11 scripts/live-client.py classify --namespace "$SLOSCOPE_NAMESPACE"
 
 The client submits the saved signal with `mode: live`. A successful result requires both the response header and report constraint to match that exact input digest, plus the expected policy and advisory boundary. It stores the full report and a local receipt with `human_review_required: true`. It does not deploy a recommendation or reveal the server's model token.
 
-A rejected, abstained, or failed request remains nonzero. Missing model configuration should remain a visible error. Do not request a fixture to turn this live check green.
+A rejected, abstained, or failed request remains nonzero. Missing model configuration should remain a visible error. Do not request a fixture to turn this live check green. Acceptance can include internal validation retries; it is not a first-response quality benchmark. If interpretation fails, retain the measured comparison, record the model outcome as unresolved in your brief, and continue with recovery. Do not retry repeatedly without a facilitator-approved model budget.
 
 === Verify the interpretation and its limits
 
@@ -124,7 +124,17 @@ In terminal 2:
 oc patch configmap sloscope-scenario -n "$SLOSCOPE_NAMESPACE" --type merge -p '{"data":{"phase":"recovery"}}'
 ----
 
-Allow projection and the window to settle if you measure recovery. In terminal 1, stop the port-forward with Ctrl-C. Leave allocation teardown and reference promotion to the reviewed operator workflow. The artifact PVC is retained by default; the core lab's local cleanup does not delete these server resources or a model Secret.
+Allow projection and a comparable measured window to settle. A successful patch alone is not recovery evidence. In terminal 2, verify the restored workload through fresh observations:
+
+[source,role="execute"]
+----
+python3.11 scripts/live-client.py check --namespace "$SLOSCOPE_NAMESPACE" &&
+python3.11 scripts/live-client.py compare --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+Inspect the new comparison receipt and drift signal. Confirm adequate measured coverage, the same reference digest, and the actual remaining breach list. In this controlled recovery, an empty breach list and `no_significant_drift` support returning the investigation to the service owner; they do not prove customer recovery or approve a release. A mixed window or remaining breaches require another measured window or facilitator investigation, not reference replacement. The client archives the previous comparison and any accepted interpretation before recording recovery.
+
+In terminal 1, stop the port-forward with Ctrl-C. Leave allocation teardown and reference promotion to the reviewed operator workflow. The artifact PVC is retained by default; the core lab's local cleanup does not delete these server resources or a model Secret.
 
 == Takeaway: Preserve the handoff and the access boundary
 

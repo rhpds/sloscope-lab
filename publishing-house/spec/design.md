@@ -42,8 +42,9 @@ Proposed hosting: Red Hat OpenShift with RHDP Classic Showroom. Tested core term
 4. Review targets and export safely: 25 minutes, hands-on.
 5. Review, cleanup, and next steps: 10 minutes.
 6. Optional MCP extension: 20 minutes, real stdio integration against synthetic artifacts.
+7. Optional live controlled telemetry: 45 minutes, permission preflight, preserved reference, deliberately changed measured window, optional constrained classification and recovery.
 
-Core total: 100 minutes. With MCP: 120 minutes. Estimates are for pacing and remain subject to independent learner timing.
+Core total: 100 minutes. With MCP: 120 minutes. With both optional extensions: 165 minutes; the requested catalog duration is 3 hours to allow transitions. Estimates are for pacing and remain subject to independent learner timing.
 
 ## Difficulty Level
 

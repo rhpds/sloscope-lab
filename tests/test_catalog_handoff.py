@@ -41,7 +41,7 @@ def test_access_preflight_checks_actual_subresources_and_detects_admin():
     def restricted(args,**kwargs):
         calls.append(args)
         deny=args[4] in ('secrets','pods','deployments.apps/sloscope','configmaps/sloscope-prometheus','rolebindings.rbac.authorization.k8s.io') and args[3] not in ('get','list')
-        if args[4]=='secrets' or '--subresource=exec' in args:deny=True
+        if args[4].startswith('secrets') or '--subresource=exec' in args:deny=True
         if '--subresource=portforward' in args:deny=False
         return SimpleNamespace(returncode=1 if deny else 0,stdout='no\n' if deny else 'yes\n')
     assert m.check('student-lab',restricted)['status']=='learner_access_qualified'
@@ -52,3 +52,14 @@ def test_access_preflight_checks_actual_subresources_and_detects_admin():
     assert m.check('student-lab',admin)['status']=='learner_access_rejected'
     disconnected=lambda *a,**k:SimpleNamespace(returncode=1,stdout='')
     assert m.check('student-lab',disconnected)['checks'][0]['observed_allowed'] is None
+
+
+def test_access_preflight_rejects_named_model_secret_read_even_when_generic_secret_read_is_denied():
+    m=load('check-learner-access')
+    def named_reader(args,**kwargs):
+        verb,resource=args[3:5]
+        allowed=(resource.startswith('deployments.apps/') and verb=='get') or (resource=='pods' and verb=='list') or resource=='services/sloscope' or resource=='configmaps/sloscope-scenario' or '--subresource=portforward' in args or resource=='secrets/dedicated-model'
+        return SimpleNamespace(returncode=0 if allowed else 1,stdout='yes\n' if allowed else 'no\n')
+    r=m.check('student-lab',named_reader,model_secret='dedicated-model')
+    assert r['status']=='learner_access_rejected'
+    assert [x['resource'] for x in r['checks'] if not x['pass']]==['secrets/dedicated-model']

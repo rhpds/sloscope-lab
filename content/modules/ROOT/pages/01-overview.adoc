@@ -62,9 +62,10 @@ A useful answer names the service owner, the checkout journey, and missing journ
 |Review and export |25 minutes |What can the owner approve, reject, or investigate next?
 |Decision brief and cleanup |10 minutes |Can another owner understand and reproduce the recommendation?
 |Optional MCP |20 minutes |Can another tool or reviewer apply the same evidence boundary?
+|Optional live telemetry |45 minutes |Can we preserve the reference, inspect a real changed window, and verify recovery?
 |===
 
-These are author estimates. An independent learner pilot is still needed to validate pacing.
+The core totals 100 minutes; both optional extensions bring the estimate to 165 minutes. The live extension needs a provisioned allocation and measured-window warm-up; it does not use the synthetic core as live evidence. These are author estimates. An independent learner pilot is still needed to validate pacing.
 
 == Take away: A repeatable review method
 

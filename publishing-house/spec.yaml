@@ -36,6 +36,7 @@ spec:
     - {id: module-03, title: Review targets and export safely, duration_min: 25}
     - {id: conclusion, title: Owner-facing recommendation and cleanup, duration_min: 10}
     - {id: optional-mcp, title: Optional MCP evidence review, duration_min: 20}
+    - {id: optional-live, title: Optional live controlled telemetry and constrained interpretation, duration_min: 45}
   environment:
     platform: "ocp"               # ocp | rhel-vms — determines which sizing fields apply
     topology: ""               # shared-cluster | per-student | cnv-pool
@@ -68,7 +69,7 @@ spec:
     external_services: [github.com, pypi.org, files.pythonhosted.org, registry.npmjs.org, "PH-approved per-allocation MaaS endpoint"]              # named external service dependencies e.g. [github.com]
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
-  duration_hours: 2
+  duration_hours: 3
   audience: "intermediate"               # beginner | intermediate | advanced
 
 development:
