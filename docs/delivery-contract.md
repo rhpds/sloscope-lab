@@ -35,3 +35,7 @@ The pinned Antora 3.2.0 build dependency tree currently reports 8 high registry 
 ## Content checkout and learner-walk qualification
 
 The current review instructions select `codex/sloscope-showroom-lab` explicitly because main remains the PH scaffold. Before publication, provision a reviewed immutable content revision as well as the pinned engine and optional adapter. Do not distribute a moving draft branch as a released lab. Antora cleans its output directory so renamed pages cannot remain reachable as stale lessons. CI checks helper outcomes and literal core lesson blocks separately; fresh setup, optional protocol, rendered reading and the human decision brief also need acceptance.
+
+## Learner credential boundary
+
+Trusted operator pod-exec checks are distinct from the learner path because executing inside a model-enabled container can expose its environment credentials. The live learner now uses scripts/live-client.py over an authorized loopback port-forward, with no engine exec or Secret reads. This change documents but does not implement the proposed minimal RBAC and per-allocation MaaS token/broker contract in docs/live-lab.md. Current dev-owner success does not qualify a catalog learner identity or shared model token.

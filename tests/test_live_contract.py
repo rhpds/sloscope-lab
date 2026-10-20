@@ -126,22 +126,3 @@ def test_source_checksums_roll_out_code_without_restarting_on_phase_changes(tmp_
     assert baseline['checkout-traffic']!=updated['checkout-traffic']
     assert baseline['sloscope']!=updated['sloscope']
     assert baseline['sloscope-prometheus']==updated['sloscope-prometheus']
-
-
-def test_live_lesson_does_not_accept_failed_reference_hash_reads(tmp_path):
-    import os
-    import re
-    import subprocess
-    fake=tmp_path/'oc'
-    fake.write_text('#!/bin/sh\ncase "$*" in *backend.collector*) exit 0 ;; *) exit 1 ;; esac\n')
-    fake.chmod(0o755)
-    text=(ROOT/'content/modules/ROOT/pages/07-live-lab.adoc').read_text()
-    blocks=re.findall(r'\[source,role="execute"(?:,[^\]]*)?\]\n----\n(.*?)\n----',text,re.S)
-    blocks=[block for block in blocks if 'baseline.json' in block]
-    assert len(blocks)==2
-    env={**os.environ,'PATH':str(tmp_path)+os.pathsep+os.environ['PATH'],
-         'SLOSCOPE_NAMESPACE':'lab-user','REFERENCE_SHA':'a'*64}
-    for block in blocks:
-        result=subprocess.run(['bash','-c',block],env=env,text=True,capture_output=True)
-        assert result.returncode!=0,(result.stdout,result.stderr)
-        assert 'hash read failed' in result.stdout or 'hash reread failed' in result.stdout
