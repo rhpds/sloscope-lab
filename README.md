@@ -1,8 +1,8 @@
 # SLOscope lab
 
-An RHDP Showroom lab for SREs and platform engineers reviewing service reliability evidence. This is the lab track, separate from AI Quickstarts work.
+An RHDP Showroom lab for SREs and platform engineers making checkout reliability decisions with a service owner. This is the lab track, separate from AI Quickstarts work.
 
-The 100-minute core path inspects synthetic telemetry, preserves a reference, measures controlled drift, exercises abstention, and tests a histogram export boundary. The optional 20-minute MCP extension reviews inline artifacts through a real stdio client. Neither path establishes live model quality, alert behavior, or RHDP publication.
+The core path starts with the checkout business decision, a short SLI/SLO/SLA primer, and event-flow/infrastructure diagrams before setup. Learners build a decision brief through Learn, Show, Do, Verify, and Takeaway sections: inspect synthetic telemetry, preserve a reference, measure controlled drift, exercise abstention, and review an export boundary. The core duration is estimated at 100 minutes, pending a learner pilot. The optional 20-minute MCP extension reviews inline artifacts through a real stdio client. Neither path establishes live model quality, alert behavior, or RHDP publication.
 
 ## Try the content
 
@@ -13,7 +13,7 @@ bash scripts/setup.sh
 .lab/venv/bin/python scripts/check-exercises.py
 ```
 
-Setup uses the immutable engine commit in `engine.lock.json` and its hashed requirements. The command checks use a temporary workspace and assert intended failures as well as successful results. They do not require model or cluster credentials.
+Setup uses the immutable engine commit in `engine.lock.json` and its hashed requirements. The command checks use a temporary workspace and assert intended failures as well as successful results. They do not grade the business reasoning in the decision brief; the conclusion supplies a service-owner rubric for that review. They do not require model or cluster credentials.
 
 For learner navigation, start at `content/modules/ROOT/pages/index.adoc`. `site.yml` builds the Antora site; `ui-config.yml` defines the terminal and OpenShift console tabs. Build with `npm ci && npm run build` after installing Node.js 22.
 

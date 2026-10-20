@@ -1,16 +1,44 @@
 = Review targets and export safely
 include::partial$_attributes.adoc[]
 
-Allow about 25 minutes. The team has evidence of a controlled change, but a proposed alert threshold still needs review. This module tests an export boundary and the separation between recorded demonstrations and live execution.
+Allow about 25 minutes. This is an author estimate pending an independent learner pilot. Bring your evidence basis and reliability assessment from the previous modules.
 
 == Learning objectives
 
-* Reject a latency threshold absent from the measured histogram.
-* Distinguish a rendered preview from an approved target and a live model response.
+* Explain why a measurable and renderable threshold can still be an unsuitable recommendation.
+* Recommend a next step that preserves the boundary between recorded demonstrations, live evidence, and operational approval.
 
-=== Exercise 1: Challenge a recorded proposal
+== Show: "It exported" is not the decision the team needs
 
-The engine includes a recorded proposal with a 595 ms latency threshold. That threshold is not present in the supplied histogram. Request an export preview:
+The Example Retail product owner now has a proposed latency threshold: "The tool suggested 595 ms. Can we deploy that alert and call the promotion review complete?"
+
+A preview file cannot answer that question. The team needs an alert that queries the intended measurements, has meaningful behavior, and supports an agreed service objective. A selector for a bucket that does not exist can yield no useful series. A valid selector can still encode an unjustified target. Either mistake could leave the team with a misleading operational signal while customers experience checkout problems.
+
+Your deliverable is a target and release recommendation with explicit evidence gates. Refusing an unsupported export is a useful business outcome: the team knows what to correct before relying on it.
+
+== Learn: Test feasibility, suitability, and operation separately
+
+For the current classic-histogram exporter, *feasibility* includes an exact declared bucket boundary and matching service identity. *Suitability* asks whether the proposed objective serves a customer need and is supported by the evidence. *Operational qualification* tests the real query, alert firing and recovery, missing-data behavior, ownership, and rollout. Passing one step does not establish the others.
+
+=== Worked example: A bucket match is necessary, not sufficient
+
+The recorded proposal contains a 595 ms latency threshold. The supplied histogram has no 0.595 second bucket, so this exporter must refuse the exact selector. Interpolating a percentile for analysis does not create a new measured bucket for export.
+
+The fixture does contain a 1.0 second boundary, equivalent to 1000 ms. That makes a selector possible, not a target recommendation. In the same synthetic distribution, 85000 of 100000 requests are at or below 1 second: *85%*. Its computed p99 is 5000 ms. A reviewer cannot infer an acceptable 1-second customer commitment simply because the bucket exists. The team must decide the required objective and evaluate the distribution against it.
+
+The recorded proposal was authored separately from the computed baseline used in this lab. Editing its bucket demonstrates the export boundary; it does not create an approved end-to-end proposal. The exercises deliberately preserve that distinction.
+
+=== Worked example: A demonstration cannot stand in for live evidence
+
+Suppose a live model endpoint is unavailable during review. Silently substituting a recorded response would let a successful-looking screen hide the missing check. The correct behavior is a visible live failure. An explicitly requested fixture can still teach the workflow, provided it is labeled and excluded from the live acceptance claim.
+
+== Do: Review the proposal before recommending a rollout
+
+=== Exercise 1: Decide what an export result establishes
+
+*Predict:* For 595 ms, choose the result the current exporter should produce: an exact rule, a guessed nearest bucket, or a refusal. Then choose what a successful 1000 ms preview would establish: a bucket match or a customer-approved target.
+
+Challenge the recorded proposal:
 
 [source,role="execute"]
 ----
@@ -23,9 +51,15 @@ printf '%s\n' "$result"
 }
 ----
 
-The helper intentionally exits 2; the shell block verifies that exact rejection and lets you continue. Expected JSON has `status: rejected`, HTTP status 422, and a message that the threshold is not an observed histogram bucket. The recorded response was authored separately from the evidence and is not a live inference result.
+The helper intentionally exits 2. The shell block verifies that exact rejection and lets you continue. Expected JSON has `status: rejected`, HTTP status 422, and a message that the threshold is not an observed histogram bucket.
 
-Read the fixture's histogram list from module 1. It includes a 1.0 second boundary. For this export-format exercise, set the proposal's latency threshold to 1000 ms:
+==== Verify the refusal and the decision
+
+Technical check: the rejection identifies the missing measured bucket. An unrelated runtime error does not satisfy this check.
+
+Decision check: record *hold this export and review the target/evidence mapping*. Do not weaken the exporter to obtain a file. Possible real follow-ups include instrumenting a required boundary or choosing a justified measurable threshold, each with appropriate review. This fixture alone does not choose between them.
+
+For the format exercise only, edit the recorded proposal to use the existing 1000 ms boundary and inspect the resulting preview:
 
 [source,role="execute"]
 ----
@@ -39,15 +73,19 @@ Expected message:
 Rendered preview with observed histogram bucket; targets still require human review
 ----
 
-WARNING: The 1000 ms value is a deliberate format exercise, not a recommended SLO for this service. It remains a manually edited recorded proposal, not a proposal accepted against this baseline. The exporter checks the bucket and identity; successful rendering does not certify every target, rationalize the choice, or prove alert firing.
+WARNING: The 1000 ms value is a deliberate format exercise, not a recommended SLO. The proposal remains a manually edited recording, not a proposal accepted against this baseline. No commands here deploy the rules.
 
-=== Verify
+==== Verify the preview and the recommendation
 
-You now have a preview instead of a deployed rule. No commands in this lab apply it to a cluster. A real adoption review needs target-policy checks, real metric bindings, query and alert firing/recovery tests, missing-data behavior, and human approval. CPU/memory alert export is blocked until qualified bindings exist. OpenSLO output still needs validation in the intended consumer.
+Technical check: inspect the Prometheus rule text for `checkout-api`, `payments`, and the `1.0` second bucket. The exercise saves a preview receipt tied to source, evidence, and preview hashes. These fields make the local artifact reviewable; they do not prove real query or alert behavior.
 
-=== Exercise 2: Keep recorded and live paths distinct
+Decision check: explain why the worked example's 85% below 1 second and 5000 ms p99 matter to target suitability. Do not approve or reject a customer commitment without its required success fraction, window, and business need. A defensible recommendation is to retain the preview for review while withholding deployment approval until those requirements and operational tests are supplied.
 
-The boundary check deliberately removes model configuration from its own process. It calls the actual HTTP handlers in process: the default request is live, and the second request explicitly asks for a fixture.
+=== Exercise 2: Keep the evidence label attached to the result
+
+*Predict:* With no model configured, should a default live request fail visibly or return a recording? What acceptance claim, if any, could you make about a separately requested fixture?
+
+The boundary check removes model configuration from its own process and calls the actual HTTP handlers in process:
 
 [source,role="execute"]
 ----
@@ -60,11 +98,24 @@ Expected message:
 PASS: default live mode returns 503 without a model; explicit fixture returns labeled demonstration
 ----
 
-The check verifies the `X-SLOscope-Mode: fixture` header. It does not simulate successful real inference or test a remote network service. Configuring a real model belongs to the separately qualified live extension; a failure must remain visible instead of becoming a recorded success.
+==== Verify the boundary and the acceptance claim
 
-== Learning checkpoint
+Technical check: the default request fails with 503, and the explicit fixture response carries `X-SLOscope-Mode: fixture`. This is an in-process handler check, not a remote network or real-model test.
 
-Can the recorded proposal and this computed baseline be treated as one approved evidence chain? No. They are separate teaching artifacts. What did the successful export establish? A matching latency bucket and renderable preview, not a sound business target or functioning deployed alert.
+Decision check: the recording demonstrates the workflow only. Do not write "live interpretation validated" in the decision brief. A real model endpoint must be qualified separately, and failed or abstained execution must remain visible.
+
+== Takeaway: Make the recommendation reviewable
+
+In the *Target and release recommendation* section of your decision brief, record:
+
+* Your disposition for the unsupported 595 ms export and why a refusal is useful.
+* What the 1000 ms preview establishes, what the measured distribution adds to the discussion, and why the target still needs a customer requirement.
+* The live evidence and operational checks needed before anyone relies on the result: approved targets, real metric bindings, alert firing/recovery and missing-data tests, a supported model path where used, and a named reviewer/owner.
+* Which conclusions are demonstrated by synthetic or recorded artifacts and which remain pending.
+
+CPU/memory alert export is still blocked until qualified metric bindings exist. OpenSLO output still needs validation in the intended consumer. Neither should be listed as accepted just because another preview rendered.
+
+Your final recommendation should let the product owner see a concrete next step and let the technical reviewer trace the reasoning. Continue to the optional MCP module to inspect the same bounded artifacts through another interface, or go to the conclusion to assemble your brief, verify the core checkpoints, and clean up.
 
 == Troubleshooting
 
@@ -72,4 +123,4 @@ If the 595 ms export succeeds, retain the preview and report the regression. If 
 
 == Learning outcomes
 
-You should now understand why an observed histogram boundary is necessary for this exporter, why a rendering gate is narrower than proposal approval, and why live failures must not silently become recorded demonstrations.
+You should now be able to distinguish feasibility from target suitability and operational acceptance, explain when refusing an export is the right next step, and give a recommendation that does not promote a recorded demonstration into live evidence.

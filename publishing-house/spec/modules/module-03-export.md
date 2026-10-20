@@ -30,3 +30,7 @@ Evidence acceptance and rendered/protocol success do not establish live-model qu
 ## Infrastructure Notes
 
 Core path is terminal-only against locked engine code. Optional MCP has its own pinned source/environment. Live and RHDP gates remain in docs/delivery-contract.md.
+
+## Learning design and business handoff
+
+Teach the concept and decision stakes before commands; use a worked example, learner prediction/choice, technical verification, and owner-facing takeaway. Contribute the matching section to the downloadable decision brief. The technical checker does not grade business reasoning. Introduce SLI/SLO/SLA and the event-flow/infrastructure architecture before setup, using the shared 02-how-it-works page.

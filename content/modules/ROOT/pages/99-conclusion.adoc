@@ -1,12 +1,20 @@
-= Review, cleanup, and next steps
+= Deliver your reliability recommendation
 include::partial$_attributes.adoc[]
 
 Allow about 10 minutes. Your review can now show what changed, which artifact was reviewed, and where the system correctly refused to proceed.
+
+== Why: The owner needs a decision, not a test transcript
+
+Return to Example Retail’s promotion review. The service owner needs to know whether the changed telemetry supports investigation, a target revision, or a different next step. Your deliverable should make that choice understandable to someone who did not watch your terminal.
 
 == Learning objectives
 
 * Confirm the completed review checkpoints.
 * Identify the remaining evidence needed for a live lab and clean up your workspace.
+
+== Learn: Separate completion from approval
+
+The automated checkpoint establishes that the intended synthetic technical path completed: a preserved reference, measured change, abstention challenges, and an export preview. It cannot grade the business reasoning in your brief or approve a release. You will review those separately.
 
 === Exercise 1: Check the review record
 
@@ -24,6 +32,42 @@ PASS: preserved reference, measured drift, 2 abstentions, and reviewed-bucket ex
 ----
 
 Keep the source commit, synthetic provenance, reference digest, drift signal, and preview together. A reviewer should be able to reproduce the chain without treating any recorded prose as a verified live finding.
+
+=== Verify
+
+Explain what the checkpoint proves and what it leaves open. A passing result is evidence that the training checks behaved as intended. It is not a conclusion that checkout is ready for additional traffic.
+
+== Do: Complete the decision brief
+
+Use xref:attachment$decision-brief.md[the decision-brief template] or your notes. Answer the owner in 5 to 8 sentences, then include the source/artifact references needed for another reviewer.
+
+. State the observed change and its units. Compare the error ratios, not only the raw error counts.
+. Explain the possible concern for the checkout journey while stating that request errors do not measure lost orders or revenue.
+. Identify 1 explanation the evidence does not prove and 1 condition that requires abstention.
+. Recommend an action, name an accountable role, and state what evidence would allow the next decision.
+. Explain whether the preview is ready to become a deployed rule or a customer commitment.
+
+=== Show: A bounded recommendation
+
+"The synthetic comparison increases the request error ratio from 0.23% to 2.3%. That supports investigating checkout reliability before using the new window as normal. It does not identify a fault or tell us how many purchases were affected. I recommend that the service owner keep the existing commitment unchanged while the SRE checks real, comparable telemetry and the product owner validates customer-journey impact. Inputs with inadequate coverage must return to evidence collection. The 1000 ms export was a histogram-format exercise; it is not an approved target or a tested production alert."
+
+This is 1 defensible response, not an automated release policy. You may recommend a different next step if you explain the risk, the missing evidence, and who can approve it. The lab does not supply an actual promotion history, agreement, or customer-impact dataset.
+
+=== Verify: Use the owner’s review rubric
+
+Read your brief as if you owned the service:
+
+* Can I tell what was measured, in which scope, and against which preserved reference?
+* Are observed facts separated from possible causes and customer impact?
+* Is there an actionable recommendation with an owner and a clear next evidence requirement?
+* Does the brief distinguish a comparison-band breach, an SLO miss, and an SLA commitment?
+* Would I understand why an admissible result or an export preview still needs approval?
+
+If any answer is no, revise the brief before treating the exercise as complete. Pair review is useful here: ask a teammate to challenge 1 unsupported claim or missing handoff. The technical checker does not grade this reasoning.
+
+== What you have learned
+
+You have practiced the handoff from a customer concern to measurements, from measurements to a bounded interpretation, and from interpretation to an accountable recommendation. The reusable skill is asking what the evidence supports before changing a target or deploying an alert.
 
 == Key takeaways
 
@@ -63,7 +107,15 @@ print('Removed local learner artifacts; engine and virtual environment retained'
 PY
 ----
 
+=== Verify
+
+The learner artifacts are removed while the engine and virtual environment remain. Keep the decision brief outside that directory if you want to retain it. Cleaning up the training workspace does not delete a monitoring system or revoke a real service allocation.
+
 For an RHDP allocation, use its normal service cleanup process when you finish. Do not delete shared namespaces or monitoring resources.
+
+== Take away: Use the method on your own service
+
+Start with 1 important user journey and its owner. Agree how to measure success, choose the evaluation period, preserve comparable evidence, and write down the next decision. Add real telemetry and model access only after ownership, data handling, and operational checks are qualified. You can use the review method even when the correct outcome is to gather more evidence.
 
 == Learning outcomes
 
@@ -75,6 +127,7 @@ Which checkpoint made you reconsider a claim? Which instruction or output was un
 
 == References
 
+* link:https://sre.google/sre-book/service-level-objectives/[Google SRE: service level indicators, objectives, and agreements^]
 * link:{engine_repo}[SLOscope engine source and evidence policy^]
 * link:{engine_repo}/blob/main/docs/evidence-constraints.md[Evidence constraints and current limitations^]
 * link:{lab_repo}[SLOscope Showroom source, design, and delivery checklist^]

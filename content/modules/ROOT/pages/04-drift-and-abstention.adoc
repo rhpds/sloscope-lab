@@ -1,16 +1,51 @@
 = Measure drift and practice abstention
 include::partial$_attributes.adoc[]
 
-Allow about 30 minutes. Example Retail's review now compares the reference with a deliberately edited scenario containing 2300 errors. No real service was changed.
+Allow about 30 minutes. This is an author estimate pending an independent learner pilot. Continue with the frozen reference from module 1.
 
 == Learning objectives
 
-* Trace measured drift to the frozen reference.
-* Reject low-coverage and contradictory signals before model interpretation.
+* Form a bounded reliability assessment from a measured change and its comparison reference.
+* Choose collection or repair when evidence cannot support a verdict.
 
-=== Exercise 1: Measure the controlled change
+== Show: A larger error count creates a decision, not an explanation
 
-Run the engine's deterministic comparison and inspect its policy stamp:
+The Example Retail product owner returns with an edited scenario: 2300 errors instead of 230, against the same 100000 synthetic requests. "That looks worse. Does it justify lowering the target so the promotion can proceed? Is the new release the cause?"
+
+The count warrants investigation, but neither proposed conclusion follows from it. Lowering a target does not repair checkout behavior. Naming the release as the cause needs evidence that this artifact does not contain. Your job is to give the team a reliability assessment that states the measured concern, its limits, and the next action.
+
+No real service was changed. The scenario deliberately edits public fixture data; it is not evidence of a real incident or a new production collection window.
+
+== Learn: Drift, impact, and cause are different conclusions
+
+Drift compares an observed indicator with a reference. Here, deterministic code computes deviations and checks tolerance bands around that reference. A band breach is a signal to review. It is not automatically a breach of a customer SLO, and the tolerance-band policy is not the customer's contract.
+
+=== Worked example: Describe the change without exaggerating it
+
+The error ratio changes from `230 / 100000 = 0.0023` to `2300 / 100000 = 0.023`. In percentage terms, that is *0.23% to 2.3%*: a 10-fold ratio and an increase of *2.07 percentage points*. Those descriptions are compatible; "2.07% more errors" would be ambiguous.
+
+The engine also derives availability as `1 - error ratio`. It therefore changes from 99.77% to 97.7%. Error and availability breaches share the same error count. They are not independent proof of 2 faults, and they do not show how many customers abandoned checkout or why the errors occurred.
+
+SLOscope's evidence policy then asks whether the signal is admissible for interpretation: finite measurements, known identities, sufficient reported coverage, and agreement between measured values and breach labels. `admissible` means those implemented checks passed. It does not mean "release approved" or "cause proven." The input digest ties the check to this exact artifact.
+
+=== Worked example: Abstention is a review outcome
+
+The current admission policy requires at least 0.8 reported measured coverage. At 0.79, the correct next step is more evidence or a coverage investigation. Rewording the conclusion or selecting a more confident model cannot supply missing measurements.
+
+A second failure is contradiction: the measurements say there are breaches, but the summary list says there are none. That input needs repair before interpretation. An abstention keeps either problem from becoming a confident recommendation.
+
+== Do: Assess the change and challenge the evidence
+
+=== Exercise 1: Measure, then choose a recommendation
+
+*Predict:* Which statement can these synthetic counts support?
+
+* "The measured error ratio increased; investigate before approving a target change."
+* "The release caused checkout abandonment; lower the SLO to proceed."
+
+Choose before running the comparison. Explain which additional evidence the second statement would require.
+
+Compute the changed indicators and review their admissibility:
 
 [source,role="execute"]
 ----
@@ -24,9 +59,9 @@ Expected first line:
 Reference preserved; breached indicators: availability_ratio, error_rate_ratio
 ----
 
-The JSON result has `status: admissible`, policy `measured-drift-v1`, a SHA-256 digest of the drift input, coverage 0.97, and the breached indicators. The changed error ratio is 0.023. Availability also falls because this engine derives it as 1 minus the error ratio. These 2 signals share an input; they are not independent proof of 2 separate faults.
+The JSON result has `status: admissible`, policy `measured-drift-v1`, a SHA-256 digest of the drift input, coverage 0.97, and the breached indicators. The helper calls the admission policy directly; it makes no model call.
 
-The `review` helper calls the engine's admission policy. It does not call a model. Inspect `drift-signal.json` to see measured values, directions, tolerance bands, and the deterministic first-pass class.
+Inspect the measured values, tolerance bands, directions, and deterministic first-pass class:
 
 [source,role="execute"]
 ----
@@ -34,13 +69,17 @@ The `review` helper calls the engine's admission policy. It does not call a mode
 cat .lab/learner/reference.sha256
 ----
 
-=== Verify
+==== Verify the measurement and the assessment
 
-The `drift` command checked the saved reference hash before and after comparison. A changed reference causes a failure rather than silently accepting a new normal.
+Technical check: `drift` checked the reference hash before and after comparison. The original remains in place, and both breached indicators appear in the signal. A modified reference would fail the check.
 
-=== Exercise 2: Ask the system to abstain
+Decision check: the first statement is supported within this synthetic scenario. Record the changed ratios and shared-input limitation. Do not name a cause or approve the promotion from these measurements alone. A real decision would also need the applicable SLO, affected-user context, release/change evidence, and the team's operational review.
 
-The current policy requires at least 0.8 reported measured coverage. Create a copy with 0.79 and review it:
+=== Exercise 2: Choose a next step when evidence is inadequate
+
+*Predict:* For coverage 0.79, choose one next action: collect or repair evidence; change the target; or continue because the model can fill the gap. Explain why your choice protects the review.
+
+Create the low-coverage challenge and require its exact rejection:
 
 [source,role="execute"]
 ----
@@ -55,9 +94,9 @@ result=$(.lab/venv/bin/python scripts/labctl.py review --input .lab/learner/low-
 echo 'PASS: insufficient coverage abstained'
 ----
 
-Expected result: JSON with `status: abstained` and a reason requiring more evidence. A nonzero exit is the intended result. It is not a healthy verdict about the service.
+Expected result: the review abstains with a reason requiring more evidence, and the shell prints `PASS: insufficient coverage abstained`. The review's nonzero exit is intentional. The shell verifies its specific reason; it does not treat every failure as a successful check.
 
-Now remove the breach identities while keeping the measured indicators unchanged:
+Now consider contradictory summaries. *Predict:* If the measured breaches remain but their summary list is empty, is this "no drift" or an input that needs repair?
 
 [source,role="execute"]
 ----
@@ -72,16 +111,29 @@ result=$(.lab/venv/bin/python scripts/labctl.py review --input .lab/learner/conf
 echo 'PASS: conflicting breach list abstained'
 ----
 
-Expected result: abstention explaining that the breach list conflicts with measured evidence.
+Expected result: abstention explaining that the breach list conflicts with measured evidence, followed by `PASS: conflicting breach list abstained`.
 
-== Learning checkpoint
+==== Verify the policy and the next action
 
-Which response should trigger collection or repair instead of a target change? `abstained`. Which response proves the model's causal explanation? Neither. `admissible` means the implemented evidence checks passed. Even an admissible classification remains advisory and does not authorize a shell command or deployment.
+Technical check: both challenges abstain for the intended reasons. An import error or missing file is an environment failure and must not be reported as evidence-policy success.
+
+Decision check: both cases require collection or repair. Neither says the service is healthy. No model interpretation can turn these failed prerequisites into an approved target change. In a real review, assign ownership for repairing the coverage or contradictory artifact before returning to the decision.
+
+== Takeaway: State what you know and what you need
+
+In the *Reliability assessment* section of your decision brief, record:
+
+* The measured error change in counts, ratios, and percentage points, tied to the preserved reference and input digest.
+* Why the availability signal is related evidence rather than a second independent fault.
+* One supported concern, one causal or customer-impact claim that remains unproven, and the evidence needed to examine it.
+* Your next action for low coverage and contradictory summaries, including who must supply corrected evidence in a real review.
+
+The workplace value is a review another engineer can challenge without guessing what the numbers mean. In module 3, you will evaluate whether a technically renderable alert threshold is also a defensible recommendation.
 
 == Troubleshooting
 
-If a challenge unexpectedly succeeds, retain the JSON artifacts and source commit and report the failure. Do not rewrite the input to obtain a preferred classification. If ordinary review fails, inspect identity, coverage, finite numbers, and consistency before configuring any model.
+If a challenge unexpectedly succeeds, retain the JSON artifacts and source commit and report the regression. Do not rewrite the input to obtain a preferred classification. If ordinary review fails, inspect identity, coverage, finite numbers, and consistency before configuring any model.
 
 == Learning outcomes
 
-You should now understand how a measured change differs from a causal explanation, how the input digest binds a review to an artifact, and why abstention is a useful outcome when evidence is insufficient or contradictory.
+You should now be able to separate measured deterioration from customer impact and cause, interpret an admissibility stamp without treating it as approval, and choose a useful next action when the evidence requires abstention.

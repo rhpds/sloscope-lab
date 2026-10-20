@@ -20,19 +20,21 @@ project:
   workflow_id: "86950aba-3493-47c0-8b56-46648cc3b161"
 
 spec:
-  title: "Review service reliability evidence with SLOscope"
+  title: "Make checkout reliability decisions with SLOscope"
   learning_objectives:
+    - Explain SLI/SLO/SLA and trace evidence flow and infrastructure boundaries before setup
+    - Write a reliability decision brief with observed evidence, uncertainty, accountable owner, and next action
     - Inspect service identity, reported coverage, telemetry window, and histogram vocabulary
     - Preserve a reference baseline and measure a controlled changed window
     - Demonstrate abstention for insufficient or contradictory evidence
     - Verify export boundaries and distinguish previews from operational approval
     - Optionally review inline artifacts through a bounded MCP protocol
   modules:
-    - {id: setup, title: Scenario and setup, duration_min: 15}
+    - {id: setup, title: Business decision, reliability primer, architecture, and setup, duration_min: 15}
     - {id: module-01, title: Inspect evidence and freeze a reference, duration_min: 20}
     - {id: module-02, title: Measure drift and practice abstention, duration_min: 30}
     - {id: module-03, title: Review targets and export safely, duration_min: 25}
-    - {id: conclusion, title: Review and cleanup, duration_min: 10}
+    - {id: conclusion, title: Owner-facing recommendation and cleanup, duration_min: 10}
     - {id: optional-mcp, title: Optional MCP evidence review, duration_min: 20}
   environment:
     platform: "ocp"               # ocp | rhel-vms — determines which sizing fields apply
@@ -91,7 +93,7 @@ approval_checklist:
 
   content:
     prerequisites_verifiable: null
-    assessment_strategy: "Exact-outcome deterministic command checks and optional real MCP stdio exchange; independent RHDP and live acceptance remain pending"
+    assessment_strategy: "Exact-outcome technical checks plus a service-owner decision-brief rubric; brief reasoning is human-reviewed. Optional real MCP exchange; independent RHDP/live acceptance pending"
     catalog_gap: "Proposed evidence-review/abstention SRE lab; RCARS overlap check pending, no uniqueness claim"
     design_overview: "publishing-house/spec/design.md; source locks and delivery contract bound the recorded core path and separate live gates"
     module_summaries: []

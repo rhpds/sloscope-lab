@@ -1,5 +1,5 @@
 site:
-  title: Review service reliability evidence with SLOscope
+  title: Make checkout reliability decisions with SLOscope
   start_page: modules::index.adoc
 content:
   sources:

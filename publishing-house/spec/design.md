@@ -1,8 +1,8 @@
-# Review service reliability evidence with SLOscope
+# Make checkout reliability decisions with SLOscope
 
 ## Overview
 
-This hands-on SRE lab teaches a review process for telemetry-derived reliability decisions. Learners inspect synthetic service evidence, preserve a reference, compare a controlled change, reject insufficient or contradictory inputs, and test an SLO export boundary. An optional MCP extension exposes the same evidence review through a local stdio protocol.
+This hands-on SRE lab teaches how to give a service owner an evidence-backed checkout reliability recommendation. The fictional promotion review provides customer context without inventing revenue, conversion, or causal outcomes. A concise SLI/SLO/SLA primer and source-backed event-flow/infrastructure diagrams precede all setup. Each module follows Learn, Show, Do, Verify, and Takeaway and contributes to a reusable decision brief. Learners inspect synthetic service evidence, preserve a reference, compare a controlled change, reject insufficient or contradictory inputs, and test an SLO export boundary. An optional MCP extension exposes the same evidence review through a local stdio protocol.
 
 The business scenario is fictional Example Retail reviewing checkout-service targets after an error-count change. No customer result, real-model quality, live alert behavior, or production target is claimed by the recorded exercises.
 
@@ -19,11 +19,12 @@ Python 3.11, Git, writable per-user terminal workspace, the exact engine source 
 
 ## Learning Objectives
 
-1. Inspect service identity, telemetry window, reported coverage, and histogram vocabulary before interpretation.
-2. Preserve a reference baseline and compare a controlled changed window without replacing it.
-3. Demonstrate abstention for low coverage and contradictory measured signals.
-4. Verify a histogram export boundary and distinguish an artifact preview from target approval or alert acceptance.
-5. Optionally review inline artifacts through bounded MCP tools and verify a real stdio exchange.
+1. Explain SLI, SLO, and SLA, then trace the evidence flow and infrastructure boundaries before collecting or interpreting data.
+2. Inspect service identity, telemetry window, reported coverage, and histogram vocabulary before interpretation.
+3. Preserve a reference baseline and compare a controlled changed window without replacing it.
+4. Demonstrate abstention for low coverage and contradictory measured signals.
+5. Verify a histogram export boundary and distinguish an artifact preview from target approval or alert acceptance.
+6. Optionally review inline artifacts through bounded MCP tools and verify a real stdio exchange.
 
 ## Content Type
 
@@ -35,7 +36,7 @@ Proposed hosting: Red Hat OpenShift with RHDP Classic Showroom. Tested core term
 
 ## Module Map
 
-1. Scenario and setup: 15 minutes, reading plus terminal preparation.
+1. Business assignment, reliability primer, event-flow and infrastructure architecture, and setup: 15 minutes, author estimate.
 2. Inspect evidence and freeze a reference: 20 minutes, hands-on.
 3. Measure drift and practice abstention: 30 minutes, hands-on plus review questions.
 4. Review targets and export safely: 25 minutes, hands-on.
@@ -70,6 +71,6 @@ The generated Ansible example intentionally fails until provisioning is implemen
 
 ## Assessment Strategy
 
-Every task module has runnable commands, expected outputs, and a conceptual checkpoint. `scripts/check-exercises.py` executes the same helper sequence in a disposable directory and asserts exact exit codes/reasons for reference replacement, coverage, contradictory breach lists, missing histogram thresholds, and live-without-model behavior. It also corrupts a reference to verify the final checkpoint fails. The optional MCP check uses a real SDK client/server session and asserts tool boundaries plus admissibility/abstention.
+Every task module teaches the concept before commands, uses a worked example and learner prediction/choice, and includes technical and owner-facing verification. Learners build a decision brief with Evidence basis, Reliability assessment, and Target and release recommendation sections. The conclusion uses an explicit review rubric; automated checks do not claim to grade business reasoning. A reusable template is in content/modules/ROOT/attachments/decision-brief.md. `scripts/check-exercises.py` executes the same helper sequence in a disposable directory and asserts exact exit codes/reasons for reference replacement, coverage, contradictory breach lists, missing histogram thresholds, and live-without-model behavior. It also corrupts a reference to verify the final checkpoint fails. The optional MCP check uses a real SDK client/server session and asserts tool boundaries plus admissibility/abstention.
 
 These tests establish local synthetic behavior. Remaining acceptance is listed in `docs/delivery-contract.md`: independent rendered learner completion, real telemetry/model behavior, alert firing/recovery/missing data, consumer validation, regular-user installation/security, immutable image qualification, RCARS/content/infrastructure review, and RHDP publication. No workflow approval or stage is edited by this PR.

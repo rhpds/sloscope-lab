@@ -1,4 +1,4 @@
-:lab-title: Review service reliability evidence with SLOscope
+:lab-title: Make checkout reliability decisions with SLOscope
 :ocp_version: {openshift_version}
 :user: {user_name}
 :namespace: {project_namespace}

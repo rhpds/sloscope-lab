@@ -1,18 +1,30 @@
 = Prepare your workspace
 include::partial$_attributes.adoc[]
 
-Allow about 10 minutes. Use the *Terminal* tab next to these instructions. The *Red Hat OpenShift console* tab is available for the provisioned lab environment; the synthetic core path does not require cluster administrator access or a cluster login.
+Allow about 10 minutes. Use the *Terminal* tab next to these instructions. The *Red Hat OpenShift console* tab is configured for the intended RHDP environment; the synthetic core path does not require cluster administrator access or a cluster login.
 
 == Learning objectives
 
 * Verify the runtime and immutable engine reference.
 * Prepare a private exercise directory without entering credentials.
 
+== Why: Make the review reproducible
+
+Another engineer should be able to repeat your calculation and get the same result. A changing engine version or an unlabeled sample can undermine that handoff before you ever discuss a target. This setup establishes the source version, dependencies, and provenance for your decision brief.
+
+You already saw the component boundaries in xref:02-how-it-works.adoc[the architecture]. Here you prepare only the training workspace shown in the top panel.
+
 == Prerequisites
 
 You should be comfortable with shell commands, JSON, HTTP status codes, and basic monitoring concepts. The terminal needs Python 3.11, Git, HTTPS access to GitHub and the Python package index during setup, and a writable home/work directory. The lab repository contains a source lock rather than an assumed preinstalled engine.
 
 For RHDP delivery, provisioning must install these prerequisites and seed the learner workspace before launch. A missing prerequisite is an environment issue, not a reason to paste credentials or bypass TLS validation.
+
+== Learn: Know what this setup establishes
+
+An immutable source commit identifies the engine implementation. Hashed dependencies identify the packages installed for that implementation. Synthetic provenance identifies the exercise data and its deliberate modification. Together they make this review repeatable; they do not authenticate production telemetry or prove a business outcome.
+
+Before running setup, predict which resources it should need: a terminal workspace and public package/source access. It should not need production credentials, a model connection, or permission to change the cluster.
 
 === Exercise 1: Obtain the lab content
 
@@ -33,6 +45,10 @@ python3.11 -m json.tool engine.lock.json
 ----
 
 Expected result: Python reports a 3.11 release, and the lock contains a full 40-character engine commit. The commit makes the exercise reproducible. A pending or missing commit is a release gate; stop and contact the facilitator.
+
+=== Verify
+
+Explain why you want the same engine commit when a teammate reviews your recommendation. It identifies the behavior you tested, including its limits. A successful clone alone says nothing about telemetry quality.
 
 === Exercise 2: Install and prepare
 
@@ -65,6 +81,12 @@ Confirm that `mode` is `synthetic` and that the deliberate edit is documented. `
 == Troubleshooting
 
 If `python3.11` is missing, ask the facilitator to repair the terminal image. If package installation fails, check network access and the error message; keep TLS verification enabled. If the workspace was already prepared, continue to the next module or use a new `--workdir` consistently for a separate attempt.
+
+== Take away: Record the scope of your investigation
+
+In your decision brief, record that this is a synthetic checkout exercise, name the pinned source reference, and state that no production service or model was queried. Those facts let the owner interpret later results at the right level of confidence.
+
+You are ready to xref:03-evidence-and-reference.adoc[inspect the evidence before interpreting it].
 
 == Learning outcomes
 

@@ -8,6 +8,10 @@ root=Path(__file__).resolve().parents[1]
 pages=root/'content/modules/ROOT/pages'
 nav=(root/'content/modules/ROOT/nav.adoc').read_text()
 references=set()
+def resolve_xref(target):
+    if target.startswith('attachment$'):
+        return root/'content/modules/ROOT/attachments'/target.removeprefix('attachment$')
+    return pages/target
 for path in pages.glob('*.adoc'):
     text=path.read_text()
     if not text.startswith('= '):
@@ -25,8 +29,13 @@ for path in pages.glob('*.adoc'):
     if '== References' in text and path.name!='99-conclusion.adoc':
         raise SystemExit(f'{path.name}: consolidate references in conclusion')
     for target in re.findall(r'xref:([^\[#]+)',text):
-        if not (pages/target).is_file():
+        if not resolve_xref(target).is_file():
             raise SystemExit(f'{path.name}: broken xref {target}')
+    for image,options in re.findall(r'image::([^\[]+)\[([^\]]+)\]',text):
+        if not (root/'content/modules/ROOT/assets/images'/image).is_file():
+            raise SystemExit(f'{path.name}: missing image {image}')
+        if 'link=self' not in options or 'window=blank' not in options:
+            raise SystemExit(f'{path.name}: image needs a full-size link {image}')
     for link,label in re.findall(r'link:([^\[]+)\[([^\]]+)\]',text):
         if not label.endswith('^'):
             raise SystemExit(f'{path.name}: external link lacks caret: {link}')
@@ -37,7 +46,7 @@ for path in pages.glob('*.adoc'):
     if 'openshift_version' in text:
         references.add('openshift_version')
 for target in re.findall(r'xref:([^\[#]+)',nav):
-    if not (pages/target).is_file():
+    if not resolve_xref(target).is_file():
         raise SystemExit(f'nav.adoc: broken xref {target}')
 ui=(root/'ui-config.yml').read_text()
 if 'default_mode: split' not in ui or 'path: /wetty' not in ui or '${DOMAIN}' not in ui:
