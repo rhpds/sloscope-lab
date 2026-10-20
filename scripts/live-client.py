@@ -246,6 +246,10 @@ class Client:
             raise ReviewError('Local comparison artifacts or receipt changed')
         if digest(self.baseline())!=reference_sha:
             raise ReviewError('Remote baseline no longer matches this review reference')
+        # Retrying inference is a new review attempt even when its measured input is unchanged.
+        if any((self.workdir/name).exists() or (self.workdir/name).is_symlink()
+               for name in ('classification-report.json','classification-receipt.json')):
+            self.archive_comparison(reference_sha)
         report,headers=self.api('/api/v1/drift/classify',{'drift_signal':signal,'mode':'live'})
         constraint=report.get('evidence_constraint',{})
         if headers.get('x-sloscope-mode')!='live' or headers.get('x-sloscope-input-sha256')!=sha or constraint.get('input_sha256')!=sha:

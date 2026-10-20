@@ -25,7 +25,7 @@ def api():
               'indicators':{'error_rate':{'ratio':.02}}}
     signal={'schema_version':1,'service':'checkout-api','provenance':{'coverage_ratio':.9},'all_breached_indicators':['error_rate_ratio']}
     state={'evidence':evidence,'baseline':baseline,'signal':signal,'collections':0,'bad_evidence_digest':False,
-           'bad_report_digest':False,'reject_model':False}
+           'bad_report_digest':False,'reject_model':False,'model_error_status':422,'report_variant':'first'}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def send(self,status,value,headers=None):
@@ -53,10 +53,10 @@ def api():
             if self.path=='/api/v1/drift/classify':
                 assert payload['mode']=='live'
                 if state['reject_model']:
-                    return self.send(422,{'detail':{'status':'abstained','reason':'Synthetic protocol rejection'}})
+                    return self.send(state['model_error_status'],{'detail':{'status':'abstained','reason':'Synthetic protocol rejection'}})
                 sha=digest(payload['drift_signal'])
                 report={'schema_version':1,'service':'checkout-api','classification':'error_rate_elevation',
-                    'recommendations':[{'action':'Review evidence before changing any target'}],
+                    'recommendations':[{'action':'Review evidence before changing any target','variant':state['report_variant']}],
                     'evidence_constraint':{'input_sha256':sha,'policy':'measured-drift-v1','prose_status':'advisory_not_verified_causality'}}
                 header_sha='0'*64 if state['bad_report_digest'] else sha
                 return self.send(200,report,{'X-SLOscope-Mode':'live','X-SLOscope-Input-SHA256':header_sha})
@@ -165,3 +165,27 @@ def test_tampered_prior_report_refuses_archive_and_alias_replacement(api,tmp_pat
     assert (tmp_path/'drift-signal.json').read_bytes()==previous
     assert (tmp_path/'classification-report.json').exists()
     assert not (tmp_path/'history').exists()
+
+
+@pytest.mark.parametrize("rejection_status",[422,502])
+def test_same_signal_reclassification_preserves_each_report_and_clears_failed_alias(api,tmp_path,rejection_status):
+    url,state=api
+    assert run('reference',url,tmp_path).returncode==0
+    baseline=(tmp_path/'baseline-reference.json').read_bytes()
+    assert run('compare',url,tmp_path).returncode==0
+    assert run('classify',url,tmp_path).returncode==0
+    first=json.loads((tmp_path/'classification-report.json').read_text())
+    state['report_variant']='second'
+    assert run('classify',url,tmp_path).returncode==0
+    second=json.loads((tmp_path/'classification-report.json').read_text())
+    assert first!=second
+    state['reject_model']=True;state['model_error_status']=rejection_status
+    failed=run('classify',url,tmp_path)
+    assert failed.returncode==(2 if rejection_status==422 else 1)
+    assert not (tmp_path/'classification-report.json').exists()
+    assert not (tmp_path/'classification-receipt.json').exists()
+    archived=list((tmp_path/'history'/digest(state['signal'])).iterdir())
+    assert len(archived)==2
+    reports=[json.loads((path/'classification-report.json').read_text()) for path in archived]
+    assert first in reports and second in reports
+    assert (tmp_path/'baseline-reference.json').read_bytes()==baseline
