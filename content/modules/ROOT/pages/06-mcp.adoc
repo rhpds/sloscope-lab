@@ -1,0 +1,43 @@
+= Optional: Review artifacts through MCP
+include::partial$_attributes.adoc[]
+
+Allow about 20 minutes. Model Context Protocol (MCP) allows a compatible assistant host to call SLOscope's evidence-review tools. The optional adapter uses the same evidence policy as the core engine. It does not query telemetry, call a model, deploy a resource, or execute remediation.
+
+== Learning objectives
+
+* Discover the adapter's tool schemas and read-only boundaries.
+* Verify a valid artifact review and a low-coverage abstention through a real stdio client.
+
+== Prerequisites
+
+Complete the core path first. The extension requires the separately pinned MCP adapter commit and optional SDK dependencies. The core exercises do not depend on this extension. The facilitator must review and enable the adapter source reference before offering this module.
+
+=== Exercise 1: Inspect before connecting
+
+Read `docs/mcp-extension.md` in this lab repository. Confirm that it identifies an immutable adapter commit and that the server accepts inline JSON artifacts rather than paths, commands, URLs, or credentials.
+
+The intended tools are `compute_baseline`, `measure_drift`, `review_classification`, and `review_proposal`. Each is annotated read-only, non-destructive, idempotent, and closed-world. Annotations communicate intent to hosts; they do not independently sandbox an arbitrary host. Review the implementation and host controls before enabling an integration.
+
+Use synthetic artifacts first. A host can see the artifacts you provide. Do not upload private telemetry, tokens, or credentials.
+
+=== Exercise 2: Run the protocol checkpoint
+
+Follow the pinned installation and protocol-check command in `docs/mcp-extension.md`. The check starts a genuine stdio server, initializes a client, discovers the 4 tools, reviews the lab's drift signal, and confirms low-coverage abstention. The server process exits when the client session closes.
+
+Expected result: discovery of exactly the documented tools, successful review of the synthetic signal, and an abstained low-coverage review. If the adapter commit is not yet pinned or the test fails, mark the optional module unavailable; do not substitute a simulated tool response.
+
+=== Verify
+
+Explain why this is an integration test even though it makes no model call. The SDK client and server exchange real protocol messages over stdio. The measurements remain synthetic and do not establish model quality, external telemetry access, or deployed alert behavior.
+
+== Learning checkpoint
+
+If an assistant asks the adapter to delete a pod or open a local file, which tool should perform that operation? None. A broader integration needs its own access and evidence contract; the current adapter has no such tools.
+
+== Troubleshooting
+
+A missing SDK is an optional-dependency issue; install it only in the extension environment. A waiting stdio server is not a browser URL. Do not expose it through a network listener to make it reachable. Host configuration differs across products, so use the host's normal review and approval controls.
+
+== Learning outcomes
+
+You should now understand how MCP can integrate evidence review with a host while preserving a small tool boundary, why inline artifacts differ from arbitrary file access, and what the protocol checkpoint does and does not verify.

@@ -1,0 +1,75 @@
+= Review targets and export safely
+include::partial$_attributes.adoc[]
+
+Allow about 25 minutes. The team has evidence of a controlled change, but a proposed alert threshold still needs review. This module tests an export boundary and the separation between recorded demonstrations and live execution.
+
+== Learning objectives
+
+* Reject a latency threshold absent from the measured histogram.
+* Distinguish a rendered preview from an approved target and a live model response.
+
+=== Exercise 1: Challenge a recorded proposal
+
+The engine includes a recorded proposal with a 595 ms latency threshold. That threshold is not present in the supplied histogram. Request an export preview:
+
+[source,role="execute"]
+----
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py export) || status=$?
+printf '%s\n' "$result"
+[ "$status" -eq 2 ] && [[ "$result" == *"not an observed histogram bucket"* ]] || {
+  echo 'FAIL: did not observe the intended histogram rejection'
+  exit 1
+}
+----
+
+The helper intentionally exits 2; the shell block verifies that exact rejection and lets you continue. Expected JSON has `status: rejected`, HTTP status 422, and a message that the threshold is not an observed histogram bucket. The recorded response was authored separately from the evidence and is not a live inference result.
+
+Read the fixture's histogram list from module 1. It includes a 1.0 second boundary. For this export-format exercise, set the proposal's latency threshold to 1000 ms:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py export --bucket-ms 1000
+.lab/venv/bin/python -m json.tool .lab/learner/export-preview.json
+----
+
+Expected message:
+
+----
+Rendered preview with observed histogram bucket; targets still require human review
+----
+
+WARNING: The 1000 ms value is a deliberate format exercise, not a recommended SLO for this service. It remains a manually edited recorded proposal, not a proposal accepted against this baseline. The exporter checks the bucket and identity; successful rendering does not certify every target, rationalize the choice, or prove alert firing.
+
+=== Verify
+
+You now have a preview instead of a deployed rule. No commands in this lab apply it to a cluster. A real adoption review needs target-policy checks, real metric bindings, query and alert firing/recovery tests, missing-data behavior, and human approval. CPU/memory alert export is blocked until qualified bindings exist. OpenSLO output still needs validation in the intended consumer.
+
+=== Exercise 2: Keep recorded and live paths distinct
+
+The boundary check deliberately removes model configuration from its own process. It calls the actual HTTP handlers in process: the default request is live, and the second request explicitly asks for a fixture.
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py boundary
+----
+
+Expected message:
+
+----
+PASS: default live mode returns 503 without a model; explicit fixture returns labeled demonstration
+----
+
+The check verifies the `X-SLOscope-Mode: fixture` header. It does not simulate successful real inference or test a remote network service. Configuring a real model belongs to the separately qualified live extension; a failure must remain visible instead of becoming a recorded success.
+
+== Learning checkpoint
+
+Can the recorded proposal and this computed baseline be treated as one approved evidence chain? No. They are separate teaching artifacts. What did the successful export establish? A matching latency bucket and renderable preview, not a sound business target or functioning deployed alert.
+
+== Troubleshooting
+
+If the 595 ms export succeeds, retain the preview and report the regression. If the 1000 ms preview fails, inspect the error and service/namespace identity. Do not disable the bucket check to make the demonstration succeed. If a live request returns a fixture without explicit opt-in, stop and preserve the response headers.
+
+== Learning outcomes
+
+You should now understand why an observed histogram boundary is necessary for this exporter, why a rendering gate is narrower than proposal approval, and why live failures must not silently become recorded demonstrations.

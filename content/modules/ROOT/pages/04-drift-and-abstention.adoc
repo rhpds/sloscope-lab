@@ -1,0 +1,87 @@
+= Measure drift and practice abstention
+include::partial$_attributes.adoc[]
+
+Allow about 30 minutes. Example Retail's review now compares the reference with a deliberately edited scenario containing 2300 errors. No real service was changed.
+
+== Learning objectives
+
+* Trace measured drift to the frozen reference.
+* Reject low-coverage and contradictory signals before model interpretation.
+
+=== Exercise 1: Measure the controlled change
+
+Run the engine's deterministic comparison and inspect its policy stamp:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py drift
+.lab/venv/bin/python scripts/labctl.py review
+----
+
+Expected first line:
+
+----
+Reference preserved; breached indicators: availability_ratio, error_rate_ratio
+----
+
+The JSON result has `status: admissible`, policy `measured-drift-v1`, a SHA-256 digest of the drift input, coverage 0.97, and the breached indicators. The changed error ratio is 0.023. Availability also falls because this engine derives it as 1 minus the error ratio. These 2 signals share an input; they are not independent proof of 2 separate faults.
+
+The `review` helper calls the engine's admission policy. It does not call a model. Inspect `drift-signal.json` to see measured values, directions, tolerance bands, and the deterministic first-pass class.
+
+[source,role="execute"]
+----
+.lab/venv/bin/python -m json.tool .lab/learner/drift-signal.json
+cat .lab/learner/reference.sha256
+----
+
+=== Verify
+
+The `drift` command checked the saved reference hash before and after comparison. A changed reference causes a failure rather than silently accepting a new normal.
+
+=== Exercise 2: Ask the system to abstain
+
+The current policy requires at least 0.8 reported measured coverage. Create a copy with 0.79 and review it:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py low-coverage
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py review --input .lab/learner/low-coverage-signal.json) || status=$?
+[ "$status" -eq 2 ] && [[ "$result" == *"At least 0.8 measured coverage"* ]] || {
+  printf '%s\n' "$result"
+  echo 'FAIL: did not observe the intended coverage abstention'
+  exit 1
+}
+echo 'PASS: insufficient coverage abstained'
+----
+
+Expected result: JSON with `status: abstained` and a reason requiring more evidence. A nonzero exit is the intended result. It is not a healthy verdict about the service.
+
+Now remove the breach identities while keeping the measured indicators unchanged:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py conflict
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py review --input .lab/learner/conflicting-signal.json) || status=$?
+[ "$status" -eq 2 ] && [[ "$result" == *"Breached indicator list conflicts"* ]] || {
+  printf '%s\n' "$result"
+  echo 'FAIL: did not observe the intended consistency abstention'
+  exit 1
+}
+echo 'PASS: conflicting breach list abstained'
+----
+
+Expected result: abstention explaining that the breach list conflicts with measured evidence.
+
+== Learning checkpoint
+
+Which response should trigger collection or repair instead of a target change? `abstained`. Which response proves the model's causal explanation? Neither. `admissible` means the implemented evidence checks passed. Even an admissible classification remains advisory and does not authorize a shell command or deployment.
+
+== Troubleshooting
+
+If a challenge unexpectedly succeeds, retain the JSON artifacts and source commit and report the failure. Do not rewrite the input to obtain a preferred classification. If ordinary review fails, inspect identity, coverage, finite numbers, and consistency before configuring any model.
+
+== Learning outcomes
+
+You should now understand how a measured change differs from a causal explanation, how the input digest binds a review to an artifact, and why abstention is a useful outcome when evidence is insufficient or contradictory.

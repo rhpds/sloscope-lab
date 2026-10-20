@@ -1,0 +1,20 @@
+---
+- name: Exercise deterministic learner review path
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Require provisioned paths
+      ansible.builtin.assert:
+        that:
+          - sloscope_source is defined
+          - sloscope_python is defined
+          - sloscope_lab_root is defined
+    - name: Verify the complete core path and intended failures
+      ansible.builtin.command:
+        argv:
+          - "{{ sloscope_python }}"
+          - "{{ sloscope_lab_root }}/scripts/check-exercises.py"
+      environment:
+        SLOSCOPE_SOURCE: "{{ sloscope_source }}"
+      changed_when: false

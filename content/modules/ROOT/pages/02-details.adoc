@@ -1,0 +1,71 @@
+= Prepare your workspace
+include::partial$_attributes.adoc[]
+
+Allow about 10 minutes. Use the *Terminal* tab next to these instructions. The *Red Hat OpenShift console* tab is available for the provisioned lab environment; the synthetic core path does not require cluster administrator access or a cluster login.
+
+== Learning objectives
+
+* Verify the runtime and immutable engine reference.
+* Prepare a private exercise directory without entering credentials.
+
+== Prerequisites
+
+You should be comfortable with shell commands, JSON, HTTP status codes, and basic monitoring concepts. The terminal needs Python 3.11, Git, HTTPS access to GitHub and the Python package index during setup, and a writable home/work directory. The lab repository contains a source lock rather than an assumed preinstalled engine.
+
+For RHDP delivery, provisioning must install these prerequisites and seed the learner workspace before launch. A missing prerequisite is an environment issue, not a reason to paste credentials or bypass TLS validation.
+
+=== Exercise 1: Obtain the lab content
+
+If provisioning already opened the `sloscope-lab` directory, stay there. Otherwise clone the public repository in your terminal:
+
+[source,role="execute"]
+----
+git clone https://github.com/rhpds/sloscope-lab.git
+cd sloscope-lab
+----
+
+Verify the runtime and inspect the source lock:
+
+[source,role="execute"]
+----
+python3.11 --version
+python3.11 -m json.tool engine.lock.json
+----
+
+Expected result: Python reports a 3.11 release, and the lock contains a full 40-character engine commit. The commit makes the exercise reproducible. A pending or missing commit is a release gate; stop and contact the facilitator.
+
+=== Exercise 2: Install and prepare
+
+The setup script checks out the engine commit into `.lab/engine` and installs its hashed dependencies into `.lab/venv`. It does not configure a model or log in to a cluster.
+
+[source,role="execute"]
+----
+bash scripts/setup.sh
+.lab/venv/bin/python scripts/labctl.py prepare
+----
+
+Expected final lines:
+
+----
+Setup complete. Run .lab/venv/bin/python scripts/labctl.py prepare
+Prepared SYNTHETIC checkout-api evidence: 100000 requests, 230 errors; scenario: 2300 errors
+----
+
+Read the provenance statement:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python -m json.tool .lab/learner/lab-provenance.json
+----
+
+=== Verify
+
+Confirm that `mode` is `synthetic` and that the deliberate edit is documented. `prepare` refuses to overwrite an existing workspace so that a repeated setup cannot erase your review evidence.
+
+== Troubleshooting
+
+If `python3.11` is missing, ask the facilitator to repair the terminal image. If package installation fails, check network access and the error message; keep TLS verification enabled. If the workspace was already prepared, continue to the next module or use a new `--workdir` consistently for a separate attempt.
+
+== Learning outcomes
+
+You should now understand how a source commit, dependency lock, and explicit synthetic provenance support reproducibility, and why environment repair is different from an evidence-policy failure.

@@ -1,0 +1,27 @@
+= Review service reliability evidence with SLOscope
+include::partial$_attributes.adoc[]
+
+A checkout service can look healthy in an average while its error rate is changing. Before changing a service level objective (SLO), your site reliability engineering (SRE) team needs to know which measurements support the decision, which claims remain uncertain, and when to stop for more evidence.
+
+This hands-on lab teaches that review process with SLOscope. You inspect telemetry artifacts, preserve a reference, measure drift, challenge inconsistent inputs, and test an export boundary. You can also review the same artifacts through the optional Model Context Protocol (MCP) adapter.
+
+IMPORTANT: The core exercises use public, synthetic data and recorded demonstrations. They do not query a production service, make real model calls, prove alert behavior, or approve service commitments. The live qualification checklist remains a separate delivery gate.
+
+== Learning objectives
+
+* Trace a decision to its service, telemetry window, coverage, and input digest.
+* Compare a changed measurement with a preserved reference.
+* Demonstrate abstention for insufficient or conflicting evidence.
+* Explain why an export preview and an advisory model response still need human review.
+
+== Your route through the lab
+
+Allow about 100 minutes for the core path and 20 minutes for the optional MCP extension. These are pacing estimates; you can work at your own speed.
+
+. xref:01-overview.adoc[Read the scenario and plan].
+. xref:02-details.adoc[Prepare the terminal workspace].
+. Complete the 3 guided modules, then review and clean up.
+
+== Learning outcomes
+
+After the lab, you should be able to explain why measured evidence, interpretation, and approval are different steps, and identify the evidence that is still missing before a real deployment.

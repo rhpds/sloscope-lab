@@ -1,0 +1,14 @@
+{
+  "name": "sloscope-lab-content",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "antora --log-failure-level error site.yml",
+    "check:content": "python3 scripts/check-content.py"
+  },
+  "engines": {"node": ">=22"},
+  "devDependencies": {
+    "@antora/cli": "3.2.0",
+    "@antora/site-generator": "3.2.0"
+  }
+}

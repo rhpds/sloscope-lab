@@ -1,0 +1,4 @@
+---
+- name: Block use of the unimplemented infrastructure scaffold
+  ansible.builtin.fail:
+    msg: "Infrastructure automation is not implemented. Review docs/delivery-contract.md before provisioning; this role must not report a successful deployment."

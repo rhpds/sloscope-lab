@@ -1,0 +1,46 @@
+= Scenario and learning goals
+include::partial$_attributes.adoc[]
+
+== Your assignment
+
+You are an SRE at the fictional Example Retail team. A reviewer proposes changing the checkout service's reliability targets after a change in errors. The team needs a review that another engineer can reproduce. Your assignment is to separate measured change from unsupported explanation, then record a decision boundary before anyone changes an alert or target.
+
+SLOscope uses deterministic code to compute a baseline and deviations. A model may interpret those measurements, but its prose does not independently establish causality. The evidence policy checks identity, coverage, numeric consistency, and permitted classes. Human reviewers remain responsible for target choices and operational changes.
+
+== Learning objectives
+
+* Identify the artifacts in a reliability review.
+* Decide what the lab can verify and what requires a live environment.
+
+== Plan your time
+
+[cols="2,1,3",options="header"]
+|===
+|Activity |Estimate |What you verify
+|Scenario and setup |15 minutes |Tools, source version, and synthetic provenance
+|Evidence and reference |20 minutes |Identity, coverage, baseline calculation, and reference preservation
+|Drift and abstention |30 minutes |Measured change, input digest, and rejection of inadequate evidence
+|Review and export |25 minutes |Observed histogram boundaries and recorded/live separation
+|Review and cleanup |10 minutes |Completed checkpoints and remaining live acceptance
+|Optional MCP |20 minutes |Read-only tool discovery, review, and abstention through stdio
+|===
+
+== The artifact path
+
+A telemetry evidence bundle becomes an empirical baseline. A later evidence bundle is compared with that frozen baseline to produce a drift signal. The evidence policy checks the signal before a live classification request can reach a model. A proposed SLO is reviewed against measurements before its deployment artifacts can be considered.
+
+In these exercises, all data is synthetic. The deliberate error-count change is a controlled teaching scenario. Do not interpret its numbers as a performance benchmark, real incident, or customer result.
+
+== Learning checkpoint
+
+Before opening the terminal, explain to a partner or write down:
+
+* Which part measures drift without a model?
+* Why can a schema-valid model response still contain an unsupported explanation?
+* What would you need before applying the exported rules to a real service?
+
+Suggested answer: deterministic code measures drift; evidence checks do not prove causal prose; a real rollout needs approved targets, qualified metrics, alert tests, permissions, and operational review.
+
+== Learning outcomes
+
+You should now be able to distinguish measurement, interpretation, artifact export, and operational approval, and place each one in the review sequence.

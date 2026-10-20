@@ -1,0 +1,12 @@
+name: modules
+title: Review service reliability evidence with SLOscope
+version: ~
+nav:
+  - modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    lab_repository_url: https://github.com/rhpds/sloscope-lab
+    engine_repository_url: https://github.com/jkershawrh/slo-sli-automation
+    openshift_version: supplied-by-lab-provisioning
+    user_name: supplied-by-lab-provisioning
+    project_namespace: supplied-by-lab-provisioning

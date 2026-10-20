@@ -1,0 +1,12 @@
+type: showroom
+default_width: 40
+persist_url_state: true
+view_switcher:
+  enabled: true
+  default_mode: split
+tabs:
+  - name: Terminal
+    path: /wetty
+    port: 443
+  - name: Red Hat OpenShift console
+    url: 'https://console-openshift-console.${DOMAIN}'

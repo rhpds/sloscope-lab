@@ -1,0 +1,52 @@
+name: Showroom content and learner checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  showroom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned content dependencies
+        run: npm ci
+      - name: Check Showroom structure and commands
+        run: npm run check:content
+      - name: Build all Showroom pages
+        run: npm run build
+      - name: Install immutable engine and hashed dependencies
+        run: bash scripts/setup.sh
+      - name: Execute learner path and exact negative outcomes
+        run: .lab/venv/bin/python scripts/check-exercises.py
+      - name: Reject optimized-Python verification
+        run: |
+          status=0
+          result=$(PYTHONOPTIMIZE=1 .lab/venv/bin/python scripts/check-exercises.py 2>&1) || status=$?
+          [ "$status" -ne 0 ] && [[ "$result" == *"Optimized Python is not supported"* ]] || {
+            printf '%s\n' "$result"
+            echo "Did not observe the intended optimization guard"
+            exit 1
+          }
+  optional-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare synthetic learner signal
+        run: |
+          bash scripts/setup.sh
+          .lab/venv/bin/python scripts/labctl.py prepare
+          .lab/venv/bin/python scripts/labctl.py baseline
+          .lab/venv/bin/python scripts/labctl.py drift
+      - name: Install optional immutable MCP adapter
+        run: bash scripts/setup-mcp.sh
+      - name: Verify real stdio review and abstention
+        run: .lab/mcp-venv/bin/python scripts/check-mcp.py

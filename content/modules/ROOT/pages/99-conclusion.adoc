@@ -1,0 +1,84 @@
+= Review, cleanup, and next steps
+include::partial$_attributes.adoc[]
+
+Allow about 10 minutes. Your review can now show what changed, which artifact was reviewed, and where the system correctly refused to proceed.
+
+== Learning objectives
+
+* Confirm the completed review checkpoints.
+* Identify the remaining evidence needed for a live lab and clean up your workspace.
+
+=== Exercise 1: Check the review record
+
+Run the final checkpoint:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py check
+----
+
+Expected message:
+
+----
+PASS: preserved reference, measured drift, 2 abstentions, and reviewed-bucket export preview
+----
+
+Keep the source commit, synthetic provenance, reference digest, drift signal, and preview together. A reviewer should be able to reproduce the chain without treating any recorded prose as a verified live finding.
+
+== Key takeaways
+
+* The deterministic engine computes measurements; interpretation remains advisory.
+* Coverage and consistency failures should produce abstention, not a healthy-service verdict.
+* A digest identifies an input; it does not authenticate its origin or prove a causal explanation.
+* A renderable artifact is still a preview until the target, metric mapping, and operational behavior are qualified.
+* MCP adds an optional review interface; it does not add deployment authority.
+
+== Live extension and delivery readiness
+
+The RHDP live path still needs a qualified per-user environment, real Prometheus/Thanos access with verified TLS, a supported model endpoint, secret injection, permissions, storage, immutable images, cleanup, and independent learner acceptance. Alert firing/recovery and missing-data behavior must be tested against actual series. The recorded core path is useful preparation, but it does not satisfy those gates.
+
+Publishing House owns content/infrastructure review and the AgnosticV onboarding path. The engineering task and draft content PR are evidence of work in progress, not proof that a catalog item is published.
+
+=== Exercise 2: Clean up your attempt
+
+The core exercises created only local `.lab/` files; they did not create cluster resources. Save any review artifacts you want to keep first. From the lab repository root, remove only the learner exercise directory:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python - <<'PY'
+from pathlib import Path
+import shutil
+import sys
+root = Path.cwd().resolve()
+if not (root / 'engine.lock.json').is_file():
+    sys.exit('Run from sloscope-lab')
+if (root / '.lab').is_symlink():
+    sys.exit('Refuse a redirected .lab directory')
+learner = root / '.lab' / 'learner'
+if learner.is_symlink():
+    sys.exit('Refuse a redirected learner directory')
+if learner.exists():
+    shutil.rmtree(learner)
+print('Removed local learner artifacts; engine and virtual environment retained')
+PY
+----
+
+For an RHDP allocation, use its normal service cleanup process when you finish. Do not delete shared namespaces or monitoring resources.
+
+== Learning outcomes
+
+You should now be able to reproduce a bounded evidence review, explain its limitations, and name the remaining live and delivery checks before operational use.
+
+== Feedback
+
+Which checkpoint made you reconsider a claim? Which instruction or output was unclear? Include the page name and source commit in feedback; keep credentials and private telemetry out of it.
+
+== References
+
+* link:{engine_repo}[SLOscope engine source and evidence policy^]
+* link:{engine_repo}/blob/main/docs/evidence-constraints.md[Evidence constraints and current limitations^]
+* link:{lab_repo}[SLOscope Showroom source, design, and delivery checklist^]
+* link:https://github.com/rhpds/rhdp-skills-marketplace/tree/main/showroom[Showroom authoring and verification skills^]
+* link:https://github.com/modelcontextprotocol/python-sdk[MCP Python SDK^]
+
+The exercise commands are backed by the immutable source reference in `engine.lock.json`; `main` links above are for ongoing reading and can change. This lab adapts the Publishing House Classic scaffold created at commit `feb950bfc77ae28f3ccbfc096641c7d3c6d9d513` and the installed Showroom authoring rules. It does not claim to be official product support documentation.

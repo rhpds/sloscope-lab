@@ -1,0 +1,91 @@
+= Inspect evidence and freeze a reference
+include::partial$_attributes.adoc[]
+
+Allow about 20 minutes. Start from the `sloscope-lab` directory prepared in the previous page.
+
+== Learning objectives
+
+* Inspect service identity, coverage, and histogram boundaries.
+* Preserve a baseline before comparing a changed scenario.
+
+=== Exercise 1: Read before interpreting
+
+The synthetic bundle identifies `checkout-api` in `payments`. Its coverage value is reported by the collector; the policy uses that value but does not independently authenticate the source. Inspect those fields and the error counts:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+e = json.loads(Path('.lab/learner/evidence.json').read_text())
+print('identity:', e['service'], e['namespace'])
+print('coverage:', e['coverage_ratio'])
+print('requests:', e['series']['request_total']['total'])
+print('errors:', e['series']['error_total']['total'])
+print('histogram seconds:', [b['le'] for b in e['series']['latency_histogram']['buckets']])
+PY
+----
+
+Expected output begins:
+
+----
+identity: checkout-api payments
+coverage: 0.97
+requests: 100000
+errors: 230
+----
+
+A histogram stores counts at declared boundaries. It does not promise that any arbitrary threshold has a matching bucket. Keep the boundary list for the export module.
+
+=== Exercise 2: Freeze a reference
+
+Compute the empirical baseline with the engine's baseline function:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py baseline
+cat .lab/learner/reference.sha256
+----
+
+Expected message:
+
+----
+Reference frozen; error ratio = 0.0023; p99 = 5000 ms
+----
+
+The digest identifies the exact saved baseline bytes. It detects a change to this local file; it does not prove where telemetry originated. Inspect the baseline if you want to see the calculated indicators and declared histogram vocabulary:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python -m json.tool .lab/learner/baseline.json
+----
+
+=== Verify
+
+Run `baseline` again and confirm that replacement fails:
+
+[source,role="execute"]
+----
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py baseline 2>&1) || status=$?
+[ "$status" -eq 1 ] && [[ "$result" == *"Reference already exists"* ]] || {
+  printf '%s\n' "$result"
+  echo 'FAIL: did not observe the intended reference-preservation rejection'
+  exit 1
+}
+echo 'PASS: reference replacement refused'
+----
+
+Expected result: an error explains that the reference already exists, followed by `PASS: reference replacement refused`.
+
+== Learning checkpoint
+
+The error ratio is 230 divided by 100000, or 0.0023. Why is this different from 0.23? It is a ratio; multiplying by 100 expresses the same value as a percentage. Why preserve the original reference? Replacing it with each new window could hide the drift you are trying to detect.
+
+== Troubleshooting
+
+If a reference already exists on your first attempt, check whether you completed this exercise earlier. Do not delete it just to make a command succeed. Use its digest to determine whether it belongs to your current attempt.
+
+== Learning outcomes
+
+You should now understand how identity and units affect a review, why the histogram vocabulary matters, and why a preserved reference is necessary for a later comparison.
