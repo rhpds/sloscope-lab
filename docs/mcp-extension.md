@@ -1,10 +1,10 @@
 # Optional MCP protocol exercise
 
-The optional adapter is pinned separately because its draft PR is stacked on the core engine PR. Core exercises use `engine.lock.json`; this extension uses `mcp.lock.json`. Review both PRs before enabling an RHDP learner environment.
+The engine fixes and optional adapter are merged into the upstream repository’s `main` through PRs #13 and #14. Core exercises use `engine.lock.json`; the optional SDK environment uses `mcp.lock.json`. Both now select the same immutable merged-main commit; the SDK remains separate from core installation. RHDP content/infrastructure acceptance is still required.
 
-- Core fixes: https://github.com/jkershawrh/slo-sli-automation/pull/13
-- MCP adapter: https://github.com/jkershawrh/slo-sli-automation/pull/14
-- MCP source: `4ae814545419cb8f1077f399b135002fa6775f5c`
+- Merged core fixes: https://github.com/jkershawrh/slo-sli-automation/pull/13
+- Merged MCP adapter: https://github.com/jkershawrh/slo-sli-automation/pull/14
+- MCP source: `ca302e5727c7d4ac2d8373aa499bc3a3184bb3ab`
 - SDK: `mcp==2.3.0`, installed only in `.lab/mcp-venv`
 
 From the lab repository root, after completing the core exercises:
