@@ -31,3 +31,7 @@ Still external: live telemetry integrity and coverage, real-model behavior, aler
 ## Content build dependency follow-up
 
 The pinned Antora 3.2.0 build dependency tree currently reports 8 high registry findings through the unfixed `braces` stack-exhaustion advisory (GHSA-vfj7-8cjw-p6xm). These are content-build dependencies, not deployed SLOscope runtime packages. A compatible audit fix did not remove them; no patched transitive version is currently offered by the registry. Keep build input and credentials restricted, monitor the upstream fix, and refresh/retest the lock when a patch is available. This PR does not claim a clean dependency audit.
+
+## Content checkout and learner-walk qualification
+
+The current review instructions select `codex/sloscope-showroom-lab` explicitly because main remains the PH scaffold. Before publication, provision a reviewed immutable content revision as well as the pinned engine and optional adapter. Do not distribute a moving draft branch as a released lab. Antora cleans its output directory so renamed pages cannot remain reachable as stale lessons. CI checks helper outcomes and literal core lesson blocks separately; fresh setup, optional protocol, rendered reading and the human decision brief also need acceptance.

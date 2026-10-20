@@ -31,6 +31,8 @@ Before comparing measurements, ask 4 questions:
 
 The synthetic reference has 230 errors out of 100000 requests. Its error ratio is `230 / 100000 = 0.0023`, equivalent to *0.23%*. It is not 0.23 as a ratio, which would mean 23%. The reported coverage is 0.97; that does not mean 97% request success. Coverage describes the evidence available to this policy, while the error ratio describes the counted requests.
 
+*p99* is the 99th percentile: the threshold at or below which 99% of the measured requests fall. A classic histogram records cumulative counts at declared upper bounds, named `le` (less than or equal). A bucket at 1 second counts all requests at or below 1 second, including those in smaller buckets. Do not add cumulative bucket counts together.
+
 The computed p99 latency is 5000 ms for this fixture. That is a summary of the supplied distribution, not a customer-approved 5-second target. The histogram's declared boundaries also limit which exact thresholds the current exporter can select. You will use that distinction in module 3.
 
 Your technical advantage is a reproducible evidence chain: inspect identity and units, compute the reference in code, and preserve the exact bytes before evaluating a change.
@@ -50,6 +52,7 @@ import json
 from pathlib import Path
 e = json.loads(Path('.lab/learner/evidence.json').read_text())
 print('identity:', e['service'], e['namespace'])
+print('window:', e['lookback_window'], e['provenance']['query_timestamps'])
 print('coverage:', e['coverage_ratio'])
 print('requests:', e['series']['request_total']['total'])
 print('errors:', e['series']['error_total']['total'])
@@ -61,6 +64,7 @@ Expected output begins:
 
 ----
 identity: checkout-api payments
+window: 30d {'start': '2026-06-05T12:00:00Z', 'end': '2026-07-05T12:00:00Z'}
 coverage: 0.97
 requests: 100000
 errors: 230

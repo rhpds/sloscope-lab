@@ -38,7 +38,26 @@ Suppose a live model endpoint is unavailable during review. Silently substitutin
 
 *Predict:* For 595 ms, choose the result the current exporter should produce: an exact rule, a guessed nearest bucket, or a refusal. Then choose what a successful 1000 ms preview would establish: a bucket match or a customer-approved target.
 
-Challenge the recorded proposal:
+Before exporting, inspect the latency proposal and contrast it with your reference. The recording is a separate teaching artifact; this lab does not execute the live model target-proposal branch shown in the architecture.
+
+[source,role="execute"]
+----
+.lab/venv/bin/python - <<'PYRECORD'
+import json
+from pathlib import Path
+record = json.loads(Path('.lab/engine/analysis/evals/recorded/web_api_baseline_response.json').read_text())
+latency = next(s for s in record['slos'] if s['sli_type'] == 'latency')
+reference = json.loads(Path('.lab/learner/baseline.json').read_text())
+print('recorded p99 observation (ms):', latency['headroom']['observed_value'])
+print('measured reference p99 (ms):', reference['indicators']['latency']['p99_ms'])
+print('recorded requires_review:', latency['requires_review'])
+print('recorded rationale:', latency['rationale'])
+PYRECORD
+----
+
+Expected comparison: the recording cites 500 ms and a sample count of 500000; your reference computes 5000 ms from a histogram of 100000 requests. The recording's `requires_review: false` flag is also part of that old artifact, not your approval. This mismatch is a reason to withhold acceptance even before testing the bucket. A rendered preview cannot repair the proposal's provenance.
+
+Now challenge the recorded proposal:
 
 [source,role="execute"]
 ----

@@ -6,14 +6,21 @@ The core path starts with the checkout business decision, a short SLI/SLO/SLA pr
 
 ## Try the content
 
-Use Python 3.11 and Git:
+Use Python 3.11 and Git. During draft review, obtain the branch that contains the lab; default `main` is still the PH scaffold:
+
+```bash
+git clone --branch codex/sloscope-showroom-lab --single-branch https://github.com/rhpds/sloscope-lab.git
+cd sloscope-lab
+```
+
+Published RHDP provisioning must supply a reviewed immutable content revision instead of this moving draft branch. Then prepare the learner workspace:
 
 ```bash
 bash scripts/setup.sh
 .lab/venv/bin/python scripts/check-exercises.py
 ```
 
-Setup uses the immutable engine commit in `engine.lock.json` and its hashed requirements. The command checks use a temporary workspace and assert intended failures as well as successful results. They do not grade the business reasoning in the decision brief; the conclusion supplies a service-owner rubric for that review. They do not require model or cluster credentials.
+Setup uses the immutable engine commit in `engine.lock.json` and its hashed requirements. The helper checks use a temporary workspace and assert intended failures as well as successful results. `scripts/check-page-commands.py` additionally runs the literal core lesson code blocks in a disposable workspace, including the capstone and scoped cleanup. They do not grade the business reasoning in the decision brief; the conclusion supplies a service-owner rubric for that review. They do not require model or cluster credentials.
 
 For learner navigation, start at `content/modules/ROOT/pages/index.adoc`. `site.yml` builds the Antora site; `ui-config.yml` defines the terminal and OpenShift console tabs. Build with `npm ci && npm run build` after installing Node.js 22.
 

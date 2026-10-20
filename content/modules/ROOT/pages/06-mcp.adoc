@@ -65,15 +65,26 @@ bash scripts/setup-mcp.sh
 
 The client starts a genuine stdio server, initializes a session, and discovers exactly the 4 documented tools. It then submits the lab's drift signal to `review_classification` and repeats the call with coverage reduced to 0.79. The check requires an admissible result followed by abstention. It also checks the tool annotations and input schemas. The server process exits when the client session closes.
 
-Expected final result:
+The check prints values from the actual tool-discovery and review responses. Before the final `PASS`, expect the following shape; `<digest>` is the 64-character digest returned for your current signal, not text to enter:
 
 ----
+Discovered tools: compute_baseline, measure_drift, review_classification, review_proposal
+review_classification status: admissible
+input_sha256: <digest>
+coverage_ratio: 0.97
+breached_indicators: availability_ratio, error_rate_ratio
+low-coverage review status: abstained
+reason: At least 0.8 measured coverage is required; collect more evidence
 PASS: discovered 4 bounded tools; real stdio review admitted measured evidence and abstained on low coverage
 ----
 
 == Verify: Explain what the result supports
 
-Compare the result with your predictions. The unchanged signal should be admitted for review; the low-coverage copy should abstain; none of the tools can delete a pod or open a file. If the command fails, inspect the failure rather than counting any nonzero exit as a successful abstention. If the pinned adapter is unavailable, mark the optional module unavailable.
+Compare the result with your predictions. Copy the returned digest, coverage, breach identities, and abstention reason into your handoff note. The check compares the returned digest with the canonical JSON digest of the exact signal it submitted, and checks the returned coverage and breach identities against that signal. A missing or inconsistent structured result fails the check; it is not replaced with an expected summary.
+
+Compare `input_sha256` with the digest printed in the core `review` result from module 2: the same unchanged signal should produce the same digest across the two interfaces. It differs from `reference.sha256`, which identifies the saved baseline file bytes. These identify different artifacts, so they should not be treated as interchangeable.
+
+The unchanged signal should be admitted for review; the low-coverage copy should abstain; none of the tools can delete a pod or open a file. If the command fails, inspect the failure rather than counting any nonzero exit as a successful abstention. If the pinned adapter is unavailable, mark the optional module unavailable.
 
 This is an integration test because a real SDK client and server exchange protocol messages over stdio. The input remains synthetic. Passing does not establish model quality, compatibility with a particular assistant host, external telemetry access, or deployed alert behavior. Those require their own qualification.
 
@@ -89,7 +100,7 @@ A missing SDK is an optional-dependency issue; install it only in the extension 
 
 MCP provides a reusable route into the lab's evidence checks. Its value in this scenario is a handoff another reviewer can repeat with the same artifacts and implemented policy. It does not turn a review into a rollout or make an unsupported explanation reliable.
 
-Add a short note to your decision brief: identify the artifact and source reference used, record the admitted and abstained outcomes, state the next action for insufficient coverage, and name the human decision still required before changing the service. If your team later selects an assistant host, record host-specific qualification as a separate remaining step.
+Add a short note to your decision brief: identify the artifact and source reference used, record the admitted and abstained outcomes, state the next action for insufficient coverage, and name the human decision still required before changing the service. If your team later selects an assistant host, record host-specific qualification as a separate remaining step. Continue to xref:99-conclusion.adoc[assemble and review your recommendation], retaining your brief before cleanup.
 
 == Learning outcomes
 

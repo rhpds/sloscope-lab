@@ -15,4 +15,5 @@ asciidoc:
     experimental: true
     page-pagination: true
 output:
+  clean: true
   dir: ./www

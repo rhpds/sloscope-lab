@@ -29,11 +29,11 @@ Similarly, SLOscope's proposal schema uses `slo_target` and `sla_target` as nume
 
 There are 2 related paths. The *target-review path* computes a baseline from telemetry and can ask a model to propose targets against that baseline. The *drift-review path* compares a later window with the preserved baseline and checks the resulting signal before optional model interpretation.
 
-image::sloscope-event-flow.svg[Event flow showing baseline and later-window paths converging at human review before export preview,link=self,window=blank,width=1100,title="Evidence flow and human decision boundary"]
+image::sloscope-event-flow.svg[Event flow showing baseline and comparison-evidence paths converging at human review before export preview,link=self,window=blank,width=1100,title="Evidence flow and human decision boundary"]
 
 . *Collect and identify evidence.* In a live environment, the Go collector reads configured telemetry. Here, a fixture supplies explicitly synthetic evidence, including service, namespace, window, counts, and reported coverage.
 . *Calculate and preserve a reference.* Deterministic code computes indicators. The learner workflow freezes the baseline and records its digest so a later comparison cannot silently redefine normal.
-. *Compare a changed window.* The drift engine calculates deviations and tolerance-band breaches. A breach means the observation crossed that comparison band. It does not by itself prove an SLO violation or a root cause.
+. *Compare with the reference.* A live workflow uses a later comparable telemetry window. This training scenario edits the original fixture while retaining its query window, so it is a controlled what-if comparison, not an independent collection. The drift engine calculates deviations and tolerance-band breaches. A breach means the observation crossed that comparison band. It does not by itself prove an SLO violation or a root cause.
 . *Apply evidence constraints.* Identity, coverage, finite numbers, and consistency matter. Inadequate or conflicting input produces abstention. Admissible input can proceed to interpretation, but acceptance does not establish that a causal explanation is true.
 . *Review the interpretation or target.* Optional live model calls provide advisory classifications or proposals. The core training path uses deterministic review and separately identified recorded examples; it makes no real model calls.
 . *Choose a next step.* A human reviews the evidence and business context. A qualified histogram boundary can produce an export preview. Deployment, target approval, customer commitments, and operational action remain separate decisions.
