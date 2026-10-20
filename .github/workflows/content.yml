@@ -24,6 +24,8 @@ jobs:
         run: bash scripts/setup.sh
       - name: Execute learner path and exact negative outcomes
         run: .lab/venv/bin/python scripts/check-exercises.py
+      - name: Verify scoped live manifests and real sample HTTP metrics
+        run: .lab/venv/bin/python -m pytest tests/test_live_contract.py -q
       - name: Walk the literal core lesson commands
         run: .lab/venv/bin/python scripts/check-page-commands.py
       - name: Reject optimized-Python verification

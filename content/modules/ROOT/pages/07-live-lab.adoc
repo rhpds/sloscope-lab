@@ -1,0 +1,135 @@
+= Optional: Review a live controlled checkout service
+include::partial$_attributes.adoc[]
+
+This extension requires a separately provisioned namespace and a reviewed immutable engine image. Its timing depends on real collection windows; it is not included in the core lab's author time estimate. Complete the recorded core path first, and use the same terminal for the commands below.
+
+== Learning objectives
+
+* Collect measured HTTP telemetry from an isolated controlled workload and preserve a reference.
+* Separate a deliberate workload change, policy admission, and real model interpretation in the decision brief.
+* Explain what still needs approval after a live collection or model call succeeds.
+
+== Show: Move the review method onto a running service
+
+Example Retail's synthetic exercise helped you practice a review. A live controlled service now lets you test whether the measurement and collection paths work together. Requests are real HTTP calls within the lab namespace. The application deliberately changes delays and error responses; it does not simulate actual customers, lost orders, or a production incident.
+
+The operator deploys the sample checkout service, a traffic generator, private Prometheus, and SLOscope with persistent artifacts. The model-optional startup profile can run without model credentials. The full model profile requires an existing dedicated Secret. No credentials belong in your commands, notes, or decision brief. This dev path exposes no public application endpoint; use authorized namespaced pod execution rather than disabling authentication or TLS checks.
+
+== Learn: A running pod is not a measured window
+
+Prometheus scrapes the checkout counters and histogram every 10 seconds. The engine selects the declared service, namespace, and lookback window, aggregates status codes, and checks actual window coverage. A fresh or restarted Prometheus cannot supply history that has not been collected. Wait for sufficient measured coverage; do not replace missing history with fixtures.
+
+The controlled phase has baseline, regression, and recovery settings. The application records actual elapsed handler time and request counts. Intended failure patterns are not observed ratios: a finite comparison window can include phase transitions, incomplete history, or a workload restart. Inspect the actual evidence and its provenance before interpreting a change.
+
+CPU/memory saturation is not invented when the private scrape lacks those metrics. A measured window and a real model response still do not prove a cause, select a customer objective, or qualify an alert.
+
+== Do: Collect and compare controlled windows
+
+=== Exercise 1: Confirm the allocation and reference
+
+The facilitator must supply `project_namespace` for this Showroom allocation. Confirm that it matches your assigned namespace before proceeding. The immutable image must contain the reviewed interval-aware collector and `SLOSCOPE_LOOKBACK` support.
+
+[source,role="execute",subs="attributes+"]
+----
+SLOSCOPE_NAMESPACE='{namespace}'
+export SLOSCOPE_NAMESPACE
+oc get deployment sloscope checkout-api checkout-traffic sloscope-prometheus -n "$SLOSCOPE_NAMESPACE"
+oc get deployment sloscope -n "$SLOSCOPE_NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}'
+printf '\n'
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -c 'import os; print("lookback:", os.environ.get("SLOSCOPE_LOOKBACK", "1h"))'
+----
+
+Expected result: 4 ready deployments, a digest-pinned engine image, and the declared lookback. A missing namespace, pending PVC, or unready workload is an environment issue. Stop and ask the facilitator to repair it; do not switch to an unrelated namespace.
+
+*Predict:* Should an allocation with a fresh 5-minute scrape immediately pass a full-window evidence check?
+
+Run the live telemetry check after allowing the configured window to fill:
+
+[source,role="execute"]
+----
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python /opt/sloscope-lab/validate_live.py --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+Successful JSON reports `mode: live_controlled_workload`, the selected namespace/service, coverage, and positive measured request/histogram counts. Values depend on actual traffic. `model_validation: not_requested` means this check did not call a model. Insufficient coverage must fail visibly; wait and retry after checking scrape health, rather than treating that failure as a healthy service verdict.
+
+Collect and store the reference, then record its hash in your brief:
+
+[source,role="execute"]
+----
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -m backend.collector --service checkout-api --namespace "$SLOSCOPE_NAMESPACE" || { echo 'FAIL: live collection did not complete'; exit 1; }
+REFERENCE_SHA=$(oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -c 'import hashlib, os; from pathlib import Path; print(hashlib.sha256((Path(os.environ["SLOSCOPE_STORE_DIR"]) / "checkout-api/baseline.json").read_bytes()).hexdigest())') || { echo 'FAIL: reference hash read failed'; exit 1; }
+[[ "$REFERENCE_SHA" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL: invalid reference hash'; exit 1; }
+printf 'reference sha256: %s\n' "$REFERENCE_SHA"
+----
+
+==== Verify the evidence and the decision
+
+A fresh store should report `reference: initialized`. A retained PVC may report `reference: preserved` instead. Inspect its provenance or request a fresh allocation if it is not the intended reference; do not silently overwrite it. Explain why workload readiness alone did not establish sufficient collection coverage.
+
+=== Exercise 2: Measure a deliberate change
+
+*Predict:* After changing the application's phase, what additional conditions must hold before the next collection is a useful comparison? Include ConfigMap projection and the full declared telemetry window in your answer.
+
+Change only the controlled lab scenario:
+
+[source,role="execute"]
+----
+oc patch configmap sloscope-scenario -n "$SLOSCOPE_NAMESPACE" --type merge -p '{"data":{"phase":"regression"}}'
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/checkout-api -c checkout-api -- python -c 'from urllib.request import urlopen; print(urlopen("http://127.0.0.1:8081/phase").read().decode())'
+----
+
+Wait until the projected phase reports `regression`, then allow a comparable lookback window while traffic continues. Projection is asynchronous; an immediate read can still show the previous phase. Do not infer a completed measurement from the successful patch response.
+
+Collect again and verify that collection did not replace the reference:
+
+[source,role="execute"]
+----
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -m backend.collector --service checkout-api --namespace "$SLOSCOPE_NAMESPACE" || { echo 'FAIL: live collection did not complete'; exit 1; }
+AFTER_SHA=$(oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -c 'import hashlib, os; from pathlib import Path; print(hashlib.sha256((Path(os.environ["SLOSCOPE_STORE_DIR"]) / "checkout-api/baseline.json").read_bytes()).hexdigest())') || { echo 'FAIL: reference hash reread failed'; exit 1; }
+[[ "$AFTER_SHA" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL: invalid reread reference hash'; exit 1; }
+[[ "$REFERENCE_SHA" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL: original reference hash missing; use the same terminal'; exit 1; }
+[ "$REFERENCE_SHA" = "$AFTER_SHA" ] || { echo 'FAIL: reference changed'; exit 1; }
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python -c 'import os; from pathlib import Path; print((Path(os.environ["SLOSCOPE_STORE_DIR"]) / "checkout-api/drift-signal.json").read_text())'
+----
+
+==== Verify the measurement and the assessment
+
+The collection should preserve the reference and compute drift. Inspect measured indicators, window timestamps, coverage, and breach identities. Do not assume a particular class or ratio from the configured phase. Record the actual comparison and distinguish the deliberate application setting from a general causal diagnosis of a real incident.
+
+== Optional real model interpretation
+
+Skip this step in the model-optional profile: its interpretation helper intentionally refuses a model call. That helper rule is not API-level authorization; if credentials already exist, direct API calls may still use them. This step is opt-in and requires the facilitator to provision the dedicated model Secret and approved endpoint, then redeploy with `sloscope_require_model=true`. It submits only the controlled lab's persisted signal. The helper requires an actual live response tied to that signal's digest and stores a validated report. It does not deploy a recommendation.
+
+[source,role="execute"]
+----
+oc exec -n "$SLOSCOPE_NAMESPACE" deployment/sloscope -c sloscope -- python /opt/sloscope-lab/classify_live.py --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+A successful summary reports `live_report_validated`, the input digest and policy, and `human_review_required`. A rejected, abstained, or failed request must remain a nonzero result. Inspect the failure and missing evidence or configuration; do not request a fixture to turn this live check green.
+
+=== Verify the interpretation and its limits
+
+Trace the report to the stored signal. Identify 1 advisory statement that still needs human review. Real execution establishes that this endpoint and input passed the implemented checks; it does not establish model quality across workloads, a true cause, customer impact, or an approved rollout.
+
+== Restore the controlled workload
+
+[source,role="execute"]
+----
+oc patch configmap sloscope-scenario -n "$SLOSCOPE_NAMESPACE" --type merge -p '{"data":{"phase":"recovery"}}'
+----
+
+Allow projection and the collection window to settle if you measure recovery. Leave reference promotion and allocation teardown to the reviewed operator workflow. This live path's artifact PVC is retained by default; the core lab's local cleanup does not delete cluster resources or a model Secret.
+
+== Takeaway: Add live evidence without widening the claim
+
+Add a clearly labeled live-controlled section to your decision brief: source/image identity, actual windows and counts, reference digest, change observed, model outcome if requested, and any failure or acceptance gate still open. Keep it separate from recorded exercises and real customer-impact claims.
+
+Continue to xref:99-conclusion.adoc[the recommendation and cleanup] after recording the controlled workload's state. Alert firing/recovery, missing-data handling, regular-user allocation acceptance, and Publishing House onboarding need their own evidence.
+
+== Attributes needed
+
+The facilitator must supply `project_namespace` for `{namespace}` and the tested OpenShift release for `{ocp_version}`. A standalone preview does not provide an allocation or substitute those values.
+
+== Learning outcomes
+
+You should now be able to distinguish real controlled telemetry from recorded examples, preserve a reference across measured windows, interpret a real model outcome without treating it as approval, and explain the remaining operational review.

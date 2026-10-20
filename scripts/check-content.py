@@ -39,7 +39,7 @@ for path in pages.glob('*.adoc'):
     for link,label in re.findall(r'link:([^\[]+)\[([^\]]+)\]',text):
         if not label.endswith('^'):
             raise SystemExit(f'{path.name}: external link lacks caret: {link}')
-    for block in re.findall(r'\[source,role="execute"\]\n----\n(.*?)\n----',text,re.S):
+    for block in re.findall(r'\[source,role="execute"(?:,[^\]]*)?\]\n----\n(.*?)\n----',text,re.S):
         result=subprocess.run(['bash','-n'],input=block,text=True,capture_output=True)
         if result.returncode:
             raise SystemExit(f'{path.name}: invalid shell block: {result.stderr}')

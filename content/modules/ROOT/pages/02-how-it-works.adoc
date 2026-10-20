@@ -42,14 +42,15 @@ The distinction matters during a promotion review: changing the baseline could h
 
 == Show: Infrastructure and trust boundaries
 
-The top panel is the runnable training arrangement. RHDP hosting and terminal provisioning are still being developed. The lower panel is the proposed live extension, not an environment claimed to be deployed or accepted.
+The top panel is the runnable synthetic training arrangement. The lower panel is the implemented private dev source contract: controlled HTTP traffic, namespaced Prometheus, the collector/API, and persistent artifact storage. A source contract is not proof that every component has passed live acceptance. RHDP terminal hosting, published learner access, and onboarding remain separate gates.
 
-image::sloscope-infrastructure.svg[Infrastructure diagram separating the runnable synthetic terminal workspace and optional local MCP process from proposed OpenShift telemetry, model endpoint, and artifact storage,link=self,window=blank,width=1100,title="Training workspace and proposed RHDP live infrastructure"]
+image::sloscope-infrastructure.svg[Infrastructure diagram separating synthetic terminal and MCP exercises from the implemented private dev contract with controlled HTTP traffic, namespaced Prometheus, collector/API, persistent storage, and an optional model connection,link=self,window=blank,width=1100,title="Training workspace and private dev source contract"]
 
 * *Learner experience:* Classic Showroom serves the guide; the terminal runs pinned Python source in an isolated workspace. The OpenShift console tab supports the intended RHDP environment, but the core exercises do not log in to a cluster.
 * *Runnable training components:* the baseline and drift engine, local evidence files, and in-process API checks. A test client calls the HTTP handlers for boundary exercises; that does not mean a production API service is running.
 * *Optional integration:* an MCP client sends inline JSON to a separate local stdio server process, which invokes the same engine checks. It does not query telemetry, call a model, read arbitrary paths, or deploy anything.
-* *Proposed live components:* a monitored sample service, Prometheus/Thanos, the SLOscope collector/API, a supported model endpoint, and artifact storage. OpenShift topology, permissions, access controls, model secrets, image digest, storage, and cleanup still need implementation and review.
+* *Implemented private dev contract:* a controlled checkout service and traffic generator, namespaced Prometheus with a static scrape, the SLOscope collector/API, and a persistent artifact PVC. The scoped Ansible role deploys, validates, and tears down owned resources. There is no public Route, broad RBAC, or service-account token mount. Actual telemetry, storage, lifecycle, and model outcomes require their own live evidence.
+* *Model and delivery gates:* model-optional startup permits telemetry work while a dedicated Secret is pending; model helpers are opt-in, and the profile is not API-level authorization. Eventual learner terminal isolation, OAuth/route access, model qualification, and Publishing House catalog review remain pending until separately accepted.
 
 Public source and package downloads are setup/build dependencies. They are not customer telemetry destinations in the core exercises. A real deployment also needs an explicit decision about which telemetry may be sent to its chosen model endpoint.
 
@@ -61,7 +62,7 @@ Suppose a later bundle reports more errors, but its coverage is below the config
 
 The appropriate next step is to obtain or repair evidence. Trace that route on the event diagram: the input reaches the constraints, the review abstains, and no new operational authority follows. A model connection or an export command cannot fill the measurement gap.
 
-Then point to the infrastructure component you would need for a real telemetry comparison. Prometheus/Thanos and its scoped read path belong to the proposed live extension; running a local synthetic exercise does not validate that connection.
+Then point to the infrastructure component you would need for a real telemetry comparison. The private Prometheus scrape and collector path belong to the optional live-controlled module. Running a local synthetic exercise does not validate that connection. Use xref:07-live-lab.adoc[the optional live path] only after the facilitator has provisioned and qualified the selected source/image and namespace.
 
 == Take away
 

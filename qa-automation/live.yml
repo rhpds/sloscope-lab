@@ -1,0 +1,8 @@
+---
+- name: Validate existing isolated live SLOscope environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: "{{ playbook_dir }}/../automation/ansible/roles/sloscope_lab"
+      sloscope_action: validate

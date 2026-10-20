@@ -28,7 +28,7 @@ For learner navigation, start at `content/modules/ROOT/pages/index.adoc`. `site.
 
 Publishing House created this repository and started a **new, Classic, RHDP Published** workflow. Author content and infrastructure review remain pending. Engineering work is tracked in INTEL-83, related to INTEL-44; Publishing House onboarding is RHDPCD-2154. No stage transition or catalog publication is claimed here.
 
-See `publishing-house/spec/design.md` for the proposed teaching design and `docs/delivery-contract.md` for unqualified infrastructure and live acceptance work. The Ansible example role fails explicitly while provisioning is unimplemented. Publishing House owns review and generation of the AgnosticV onboarding path.
+See `publishing-house/spec/design.md` for the proposed teaching design and `docs/delivery-contract.md` for unqualified infrastructure and live acceptance work. The Ansible contract now implements scoped deploy/validate/teardown; optional live learner instructions remain gated on a provisioned and qualified allocation. Publishing House owns review and generation of the AgnosticV onboarding path.
 
 ## Sources and license
 

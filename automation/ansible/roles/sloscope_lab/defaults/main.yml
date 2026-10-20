@@ -1,0 +1,13 @@
+---
+sloscope_action: deploy
+sloscope_namespace: ""
+sloscope_engine_image: ""
+sloscope_prometheus_image: ""
+sloscope_model_secret: sloscope-model
+sloscope_storage_class: ""
+sloscope_lookback: 5m
+sloscope_scenario_phase: baseline
+sloscope_validate_model: false
+sloscope_remove_artifacts: false
+sloscope_include_engine: true
+sloscope_require_model: true

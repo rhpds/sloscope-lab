@@ -1,0 +1,7 @@
+---
+- name: Operate the isolated SLOscope live lab
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: "{{ playbook_dir }}/../roles/sloscope_lab"

@@ -1,0 +1,27 @@
+---
+- name: Locate only resources managed by this lab in the requested namespace
+  kubernetes.core.k8s_info:
+    api_version: "{{ item.api_version }}"
+    kind: "{{ item.kind }}"
+    namespace: "{{ sloscope_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/managed-by=sloscope-lab
+  loop: "{{ [{'api_version': 'apps/v1', 'kind': 'Deployment'}, {'api_version': 'v1', 'kind': 'Service'}, {'api_version': 'v1', 'kind': 'ConfigMap'}, {'api_version': 'networking.k8s.io/v1', 'kind': 'NetworkPolicy'}] + ([{'api_version': 'v1', 'kind': 'PersistentVolumeClaim'}] if sloscope_remove_artifacts | bool else []) }}"
+  register: _sloscope_owned
+
+- name: Delete managed resources while preserving namespace and model Secret
+  kubernetes.core.k8s:
+    state: absent
+    api_version: "{{ item.1.apiVersion }}"
+    kind: "{{ item.1.kind }}"
+    name: "{{ item.1.metadata.name }}"
+    namespace: "{{ sloscope_namespace }}"
+    wait: true
+    wait_timeout: 120
+  loop: "{{ query('subelements', _sloscope_owned.results, 'resources') }}"
+  loop_control:
+    label: "{{ item.1.kind }}/{{ item.1.metadata.name }}"
+
+- name: Explain retained state
+  ansible.builtin.debug:
+    msg: "Managed workload resources removed. Namespace and dedicated model Secret are preserved. Artifact PVC deletion requested={{ sloscope_remove_artifacts | bool }}; false retains the review record."

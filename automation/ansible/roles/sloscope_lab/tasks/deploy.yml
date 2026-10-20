@@ -1,0 +1,102 @@
+---
+- name: Require immutable images and an existing model Secret name
+  ansible.builtin.assert:
+    that:
+      - sloscope_engine_image is match('^\S+@sha256:[a-f0-9]{64}$')
+      - sloscope_prometheus_image is match('^\S+@sha256:[a-f0-9]{64}$')
+      - sloscope_model_secret is match('^[a-z0-9]([a-z0-9-]*[a-z0-9])?$')
+    fail_msg: "Supply digest-pinned engine/Prometheus images and an existing namespaced model Secret"
+
+- name: Check existing model configuration without displaying its values
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ sloscope_model_secret }}"
+    namespace: "{{ sloscope_namespace }}"
+  register: _sloscope_secret
+  no_log: true
+  when: sloscope_include_engine | bool and sloscope_require_model | bool
+
+- name: Require only the configured model keys
+  ansible.builtin.assert:
+    that:
+      - _sloscope_secret.resources | length == 1
+      - "'LLM_BASE_URL' in _sloscope_secret.resources[0].data"
+      - "'LLM_API_KEY' in _sloscope_secret.resources[0].data"
+      - "'LLM_MODEL' in _sloscope_secret.resources[0].data"
+    fail_msg: "Existing Secret must contain LLM_BASE_URL, LLM_API_KEY, and LLM_MODEL"
+  no_log: true
+  when: sloscope_include_engine | bool and sloscope_require_model | bool
+
+- name: Render resources from the reviewed controller-side renderer
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - "{{ role_path }}/files/render.py"
+      - --namespace
+      - "{{ sloscope_namespace }}"
+      - --engine-image
+      - "{{ sloscope_engine_image }}"
+      - --prometheus-image
+      - "{{ sloscope_prometheus_image }}"
+      - --model-secret
+      - "{{ sloscope_model_secret }}"
+      - --storage-class
+      - "{{ sloscope_storage_class }}"
+      - --lookback
+      - "{{ sloscope_lookback }}"
+      - --scenario-phase
+      - "{{ sloscope_scenario_phase }}"
+      - --include-engine
+      - "{{ sloscope_include_engine | bool | lower }}"
+      - --require-model
+      - "{{ sloscope_require_model | bool | lower }}"
+  register: _sloscope_render
+  changed_when: false
+
+- name: Inspect potential resource-name collisions in the namespace
+  kubernetes.core.k8s_info:
+    api_version: "{{ item.apiVersion }}"
+    kind: "{{ item.kind }}"
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ sloscope_namespace }}"
+  loop: "{{ (_sloscope_render.stdout | from_json)['items'] }}"
+  loop_control:
+    label: "{{ item.kind }}/{{ item.metadata.name }}"
+  register: _sloscope_existing
+
+- name: Refuse to adopt resources not managed by this lab
+  ansible.builtin.assert:
+    that:
+      - item.resources | length == 0 or (item.resources[0].metadata.labels | default({})).get('app.kubernetes.io/managed-by', '') == 'sloscope-lab'
+    fail_msg: "A requested resource name belongs to another owner; use an isolated namespace"
+  loop: "{{ _sloscope_existing.results }}"
+  loop_control:
+    label: "{{ item.item.kind }}/{{ item.item.metadata.name }}"
+
+- name: Apply the namespace-scoped resources
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ (_sloscope_render.stdout | from_json)['items'] }}"
+    apply: true
+
+- name: Wait for each controlled workload to become ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ sloscope_namespace }}"
+  loop: "{{ ['checkout-api', 'checkout-traffic', 'sloscope-prometheus'] + (['sloscope'] if sloscope_include_engine | bool else []) }}"
+  register: _sloscope_ready
+  until: >-
+    _sloscope_ready.resources | length == 1 and
+    (_sloscope_ready.resources[0].status.observedGeneration | default(0)) >= (_sloscope_ready.resources[0].metadata.generation | default(1)) and
+    (_sloscope_ready.resources[0].status.updatedReplicas | default(0)) == 1 and
+    (_sloscope_ready.resources[0].status.availableReplicas | default(0)) == 1 and
+    (_sloscope_ready.resources[0].status.readyReplicas | default(0)) == 1
+  retries: 60
+  delay: 5
+
+- name: Record the bounded deployment result
+  ansible.builtin.debug:
+    msg: "Workloads ready. Allow the {{ sloscope_lookback }} telemetry window to warm up, then run action=validate. No live model, alert, learner, or RHDP acceptance is implied by readiness."

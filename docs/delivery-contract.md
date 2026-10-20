@@ -1,6 +1,6 @@
 # RHDP delivery contract and open gates
 
-This PR supplies Showroom content, deterministic exercises, a source lock, and checks. It does not claim an RHDP allocation has been provisioned or independently accepted.
+This PR supplies Showroom content, deterministic exercises, a source lock, checks, and a scoped live deployment contract. Local manifest/HTTP checks do not establish an accepted RHDP allocation; live dev evidence and remaining gates are recorded separately.
 
 ## Proposed learner environment
 
@@ -14,8 +14,8 @@ Topology, cluster release, worker sizing, per-user limits, concurrency, image di
 
 1. Review and merge the pinned core engine fixes and optional MCP adapter before final source qualification. Re-run content checks when source references change.
 2. Render every page, verify terminal/console tabs and runtime attribute substitution, and independently complete the commands as a regular learner.
-3. Implement the infrastructure Ansible collection; replace the deliberately failing example. Provision tools and per-user storage without depending on learner admin privileges.
-4. Execute `qa-automation/healthcheck.yml` and `e2e.yml` with actual provisioned source/runtime paths. Those checks cover synthetic review only; attach results to the workflow.
+3. Qualify the implemented namespace-scoped Ansible deploy/validate/teardown contract, controller ownership/idempotence, and restricted-user storage. See docs/live-lab.md; the old example now delegates to the implemented role. Learner access and final PH provisioning still need acceptance.
+4. Execute `qa-automation/healthcheck.yml` and `e2e.yml` with actual provisioned source/runtime paths. Those checks cover synthetic review only; qa-automation/live.yml separately exercises measured controlled telemetry and optional real model execution. Attach each result under its actual scope.
 5. Qualify collection against real label mappings and windows, preserved reference behavior, model failures/abstention, numeric claims, and secret handling. Synthetic fixtures are not this evidence.
 6. Test Prometheus alert firing, recovery, and missing-data cases; validate OpenSLO in a real consumer. CPU/memory alert binding is currently unsupported.
 7. Review the optional MCP source/host, confirm real protocol discovery and abstention, and verify no unsupported tool access. A local SDK test does not establish host deployment acceptance.

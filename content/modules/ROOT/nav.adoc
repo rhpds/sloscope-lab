@@ -6,4 +6,5 @@
 * xref:04-drift-and-abstention.adoc[2. Measure drift and practice abstention]
 * xref:05-review-and-export.adoc[3. Review targets and export safely]
 * xref:06-mcp.adoc[Optional: Review artifacts through MCP]
+* xref:07-live-lab.adoc[Optional: Review live controlled telemetry]
 * xref:99-conclusion.adoc[Deliver your recommendation]
