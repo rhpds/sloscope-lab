@@ -7,6 +7,8 @@ import math
 from pathlib import Path
 import re
 import sys
+import tempfile
+import shutil
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
@@ -158,6 +160,61 @@ class Client:
             raise ReviewError('Local reference or receipt changed; do not promote it silently')
         return baseline,sha
 
+    def archive_comparison(self,reference_sha):
+        """Preserve the exact prior input/output before replacing current aliases."""
+        names=('drift-signal.json','comparison-receipt.json')
+        reports=('classification-report.json','classification-receipt.json')
+        present={name:(self.workdir/name).exists() for name in names+reports}
+        if not any(present.values()):
+            return
+        if not all(present[name] for name in names) or present[reports[0]]!=present[reports[1]]:
+            raise ReviewError('Prior comparison/classification artifacts are incomplete; preserve and inspect them')
+        for name in names+reports:
+            if (self.workdir/name).is_symlink():
+                raise ReviewError('Refuse a redirected prior review artifact')
+        bundle={name:load(self.workdir/name) for name in names+reports if present[name]}
+        signal=bundle[names[0]]
+        self.scoped(signal,namespace=False)
+        sha=digest(signal)
+        receipt=bundle[names[1]]
+        if receipt.get('drift_sha256')!=sha or receipt.get('baseline_sha256')!=reference_sha or receipt.get('namespace')!=self.namespace or receipt.get('service')!=self.service:
+            raise ReviewError('Prior comparison artifacts or receipt changed; archive refused')
+        if present[reports[0]]:
+            report=bundle[reports[0]]; classified=bundle[reports[1]]
+            constraint=report.get('evidence_constraint',{})
+            if (constraint.get('input_sha256')!=sha or constraint.get('policy')!='measured-drift-v1'
+                or constraint.get('prose_status')!='advisory_not_verified_causality'
+                or report.get('service')!=self.service or classified.get('input_sha256')!=sha
+                or classified.get('service')!=self.service or classified.get('namespace')!=self.namespace
+                or classified.get('classification')!=report.get('classification')
+                or classified.get('report_sha256')!=digest(report)
+                or classified.get('human_review_required') is not True
+                or classified.get('policy')!=constraint.get('policy')
+                or classified.get('prose_status')!=constraint.get('prose_status')):
+                raise ReviewError('Prior classification is not bound to the preserved comparison; archive refused')
+        history=self.workdir/'history'
+        target=history/sha/digest(bundle)
+        if history.is_symlink() or target.parent.is_symlink() or target.is_symlink():
+            raise ReviewError('Refuse redirected review history')
+        if not target.exists():
+            if history.exists() and sum(1 for path in history.glob('*/*') if path.is_dir())>=32:
+                raise ReviewError('Review history reached 32 snapshots; retain this workdir and start another review workdir')
+            target.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
+            temporary=Path(tempfile.mkdtemp(prefix='.archive-',dir=target.parent))
+            try:
+                for name,value in bundle.items():
+                    (temporary/name).write_text(json.dumps(value,sort_keys=True,indent=2,allow_nan=False)+'\n')
+                if {path.name:load(path) for path in temporary.iterdir()}!=bundle:
+                    raise ReviewError('Review history write did not verify')
+                temporary.rename(target)
+            finally:
+                if temporary.exists():shutil.rmtree(temporary)
+        if any(path.is_symlink() for path in target.iterdir()) or {path.name:load(path) for path in target.iterdir()}!=bundle:
+            raise ReviewError('Existing review history differs from the current artifacts; archive refused')
+        # A failed classification of the next comparison must not look like a current success.
+        for name in reports:
+            if present[name]:(self.workdir/name).unlink()
+
     def compare(self):
         baseline,sha=self.reference_files()
         self.check()
@@ -171,6 +228,7 @@ class Client:
         receipt={'status':'reference_preserved_and_drift_recorded','service':self.service,'namespace':self.namespace,
                  'baseline_sha256':sha,'drift_sha256':digest(signal),'coverage_ratio':coverage,
                  'breached_indicators':signal.get('all_breached_indicators',[]),'approval':'human_review_required'}
+        self.archive_comparison(sha)
         self.write('drift-signal.json',signal)
         self.write('comparison-receipt.json',receipt)
         # Read the preserved file again: writing comparison artifacts must never replace it.
@@ -197,7 +255,7 @@ class Client:
         if not isinstance(report.get('classification'),str) or not report['classification'].strip() or not isinstance(report.get('recommendations'),list) or not report['recommendations']:
             raise ReviewError('Live classification result is incomplete')
         receipt={'status':'live_report_validated','service':self.service,'namespace':self.namespace,'input_sha256':sha,
-                 'classification':report['classification'],'policy':constraint['policy'],
+                 'classification':report['classification'],'report_sha256':digest(report),'policy':constraint['policy'],
                  'prose_status':constraint['prose_status'],'human_review_required':True}
         self.write('classification-report.json',report)
         self.write('classification-receipt.json',receipt)

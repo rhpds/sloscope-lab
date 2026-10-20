@@ -121,3 +121,47 @@ def test_model_rejection_and_digest_mismatch_remain_nonzero(api,tmp_path):
     assert accepted.returncode==0,accepted.stderr
     assert json.loads(accepted.stdout)['human_review_required'] is True
     assert (tmp_path/'classification-report.json').exists()
+
+
+def test_comparison_archives_accepted_report_and_rejection_leaves_no_current_report(api,tmp_path):
+    url,state=api
+    assert run('reference',url,tmp_path).returncode==0
+    baseline=(tmp_path/'baseline-reference.json').read_bytes()
+    assert run('compare',url,tmp_path).returncode==0
+    assert run('classify',url,tmp_path).returncode==0
+    old_sha=digest(state['signal'])
+    old_report=json.loads((tmp_path/'classification-report.json').read_text())
+    state['signal']['all_breached_indicators']=['latency_p99_ratio']
+    result=run('compare',url,tmp_path)
+    assert result.returncode==0,result.stderr
+    archives=list((tmp_path/'history'/old_sha).iterdir())
+    assert len(archives)==1
+    assert json.loads((archives[0]/'classification-report.json').read_text())==old_report
+    assert digest(json.loads((archives[0]/'drift-signal.json').read_text()))==old_sha
+    assert not (tmp_path/'classification-report.json').exists()
+    assert not (tmp_path/'classification-receipt.json').exists()
+    assert (tmp_path/'baseline-reference.json').read_bytes()==baseline
+    state['reject_model']=True
+    assert run('classify',url,tmp_path).returncode==2
+    assert not (tmp_path/'classification-report.json').exists()
+    assert (archives[0]/'classification-report.json').exists()
+
+
+@pytest.mark.parametrize("tamper",["receipt","report"])
+def test_tampered_prior_report_refuses_archive_and_alias_replacement(api,tmp_path,tamper):
+    url,state=api
+    assert run('reference',url,tmp_path).returncode==0
+    assert run('compare',url,tmp_path).returncode==0
+    assert run('classify',url,tmp_path).returncode==0
+    previous=(tmp_path/'drift-signal.json').read_bytes()
+    path=tmp_path/('classification-receipt.json' if tamper=='receipt' else 'classification-report.json')
+    changed=json.loads(path.read_text())
+    if tamper=='receipt':changed['input_sha256']='0'*64
+    else:changed['recommendations']=[{'action':'Unreviewed altered prose'}]
+    path.write_text(json.dumps(changed))
+    state['signal']['all_breached_indicators']=[]
+    result=run('compare',url,tmp_path)
+    assert result.returncode!=0 and 'archive refused' in result.stderr
+    assert (tmp_path/'drift-signal.json').read_bytes()==previous
+    assert (tmp_path/'classification-report.json').exists()
+    assert not (tmp_path/'history').exists()
