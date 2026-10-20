@@ -37,11 +37,12 @@ In terminal 1:
 ----
 SLOSCOPE_NAMESPACE='{namespace}'
 export SLOSCOPE_NAMESPACE
+python3.11 scripts/check-learner-access.py --namespace "$SLOSCOPE_NAMESPACE"
 oc get deployment sloscope checkout-api checkout-traffic sloscope-prometheus -n "$SLOSCOPE_NAMESPACE"
 oc port-forward --address 127.0.0.1 -n "$SLOSCOPE_NAMESPACE" service/sloscope 18080:8080
 ----
 
-Expected result: 4 ready deployments and a forward bound to `127.0.0.1:18080`. Keep it running. A missing allocation or unready workload needs facilitator repair; do not switch to an unrelated namespace or bind the forward to `0.0.0.0`.
+Expected result: `learner_access_qualified`, 4 ready deployments and a forward bound to `127.0.0.1:18080`. Keep it running. The preflight queries permissions only; it never reads Secrets, opens shells or changes the scenario. Broad administrator access fails this check even if the application works. A missing allocation, excessive/missing permissions or unready workload needs facilitator repair; do not switch to an unrelated namespace or bind the forward to `0.0.0.0`.
 
 A loopback forward is reachable from the same host where it runs. In a remote Showroom terminal, that is the terminal host, not your desktop browser. Terminal 2 must share that host/workspace. Future learner browser access needs separately reviewed OAuth/route integration.
 

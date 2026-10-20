@@ -44,7 +44,7 @@ The Showroom module contains the exact commands. Its cluster execution remains s
 
 ## Proposed catalog learner permission and credential contract
 
-Document and review this contract before implementing any role:
+The review-only catalog handoff now emits an unbound proposed Role and runtime attributes; see `docs/catalog-handoff.md`. The deployment role still grants no permissions. Review the contract before binding it:
 
 - Read assigned Deployment/Pod metadata and the named `sloscope` Service as required to find a ready allocation and forward the API.
 - Permit the required `pods/portforward` operation only within the isolated allocation. Native RBAC selection for dynamic pod names and allocation isolation needs infrastructure review.

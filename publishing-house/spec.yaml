@@ -59,13 +59,13 @@ spec:
 
     # --- Common fields (both platforms) ---
     aap_version: ""                    # required if AAP in products
-    ai_requirement: "none"                 # maas | gpu | none
-    ai_model_tier: ""                  # open-source | frontier (if ai_requirement = maas or gpu)
-    ai_model_name: ""                  # specific model e.g. granite-3.1-8b
+    ai_requirement: "maas"                 # maas | gpu | none
+    ai_model_tier: "open-source"                  # open-source | frontier (if ai_requirement = maas or gpu)
+    ai_model_name: "qwen3-235b"                  # specific model e.g. granite-3.1-8b
     ai_justification: ""               # required if ai_model_tier = frontier or ai_requirement = gpu
     non_ga_products: []                # list of non-GA products/versions
     non_ga_access_plan: ""             # how access is provided for non-GA products
-    external_services: [github.com, pypi.org, files.pythonhosted.org, registry.npmjs.org]              # named external service dependencies e.g. [github.com]
+    external_services: [github.com, pypi.org, files.pythonhosted.org, registry.npmjs.org, "PH-approved per-allocation MaaS endpoint"]              # named external service dependencies e.g. [github.com]
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
   duration_hours: 2

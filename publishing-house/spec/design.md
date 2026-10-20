@@ -32,7 +32,7 @@ Lab: hands-on workshop. This is the SLOscope RHDP lab track, not a new AI Quicks
 
 ## Products & Technologies
 
-Proposed hosting: Red Hat OpenShift with RHDP Classic Showroom. Tested core terminal runtime: Python 3.11; source and dependency references are locked in the repository. Upstream components: SLOscope, Prometheus/OpenSLO preview artifacts, Antora, and optional MCP Python SDK 2.3.0. OpenShift release and live model remain pending infrastructure review; no tested cluster version is claimed.
+Proposed hosting: Red Hat OpenShift with RHDP Classic Showroom. Tested core terminal runtime: Python 3.11; source and dependency references are locked in the repository. Upstream components: SLOscope, Prometheus/OpenSLO preview artifacts, Antora, and optional MCP Python SDK 2.3.0. Private dev qualification now covers an AMD64 OpenShift deployment with controlled real telemetry and an authorized open-weight model. The catalog target release, image distribution and per-allocation model contract remain infrastructure review items; dev observations do not establish catalog acceptance.
 
 ## Module Map
 
@@ -55,7 +55,7 @@ Intermediate.
 
 **Automation needed:** Yes. Provision and pre-seed Python 3.11, Git, locked source/dependencies, learner workspace, runtime attributes, and cleanup. Live extension automation additionally needs a controlled sample service, monitored labels/windows, real read access to metrics, supported model access, scoped secrets, artifact storage, and API access controls.
 
-The generated Ansible example intentionally fails until provisioning is implemented. QA playbooks verify an existing terminal/source contract and complete deterministic command sequence. They do not provision infrastructure or establish live acceptance.
+The namespace-scoped Ansible role now implements deploy, validate and teardown for controlled telemetry, private API services and persistent artifacts, referencing an existing dedicated model Secret. QA distinguishes synthetic core commands, trusted operator live checks and restricted learner HTTP access. A review-only catalog handoff supplies immutable content selection, Showroom attributes, a proposed unbound learner Role and declared per-allocation resource budget. It does not grant access or edit AgnosticV.
 
 ## Infrastructure Requirements
 
@@ -63,8 +63,8 @@ The generated Ansible example intentionally fails until provisioning is implemen
 - **Cloud provider:** CNV is the template default, not a validated sizing decision.
 - **Cluster type/topology/sizing/concurrency:** Pending infrastructure review; do not infer requirements from the local synthetic run.
 - **Automation:** Ansible through Publishing House. AgnosticV generation and catalog onboarding remain owned by the PH workflow.
-- **Core AI requirement:** None; recorded/synthetic core exercises do not call a model.
-- **Live AI extension:** Supported open-weight model via an approved endpoint; model identity, access, and sizing remain pending. No dedicated GPU requirement is established.
+- **Core AI requirement:** None for recorded/synthetic core exercises. The proposed catalog includes an optional real-model path and therefore declares MaaS rather than hiding that dependency.
+- **Live AI extension:** Open-weight Qwen3-235B was exercised through the authorized dev model connection. Catalog access must use per-allocation credentials or an approved broker with quotas, expiry and revocation. Reviewer-selected MaaS distribution and concurrency remain pending; no local GPU is required by this design.
 - **External services:** Public GitHub, Python package indexes, Node package registry, and theme release download at setup/build. Approved pre-seeding is preferred for final delivery. Live telemetry and model endpoints need separate ownership review.
 - **Security/storage:** Scoped learner identity, verified TLS, server-side model secrets, namespace/metric isolation, OAuth/API controls, writable artifact PVC/permissions, and explicit cleanup require implementation and acceptance.
 - **Non-GA products:** No non-GA product dependency established; reviewers must classify any chosen live model/serving stack before acceptance.

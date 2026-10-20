@@ -44,3 +44,7 @@ The role refuses to adopt named resources without its ownership label. Teardown 
 Deploy waits for workload readiness. Validate with `sloscope_include_engine=false` checks actual scrape health and nonzero controlled request counters. Full validate checks collection identity, coverage, measured counts, and a computed baseline through the live HTTP path. Model invocation is a separate opt-in and requires a nonempty, evidence-constrained live proposal with human-review flags. `qa-automation/live.yml` invokes this same trusted-operator validation contract. Its pod-exec capability is not a learner permission grant. Root's live evidence, independent learner acceptance, alert firing, and PH review remain separate gates; local renderer/HTTP tests are not deployment proof.
 
 See `docs/live-lab.md` and the optional Showroom live module for learner and operator sequencing.
+
+## Publishing House handoff
+
+Use `scripts/catalog-handoff.py` and `docs/catalog-handoff.md` to prepare immutable allocation inputs, Showroom runtime attributes, declared budgets and an unbound proposed learner Role for review. The deployment playbook does not apply that Role or create a binding. Run the authorization-only learner preflight before the live lesson. Credential issuance, binding approval and AgnosticV generation stay with PH.
