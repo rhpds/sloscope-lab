@@ -1,0 +1,40 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sloscope-lab
+  title: sloscope-lab
+  description: "Hands-on SRE lab using SLOscope to collect and inspect telemetry
+    evidence, compare drift against a preserved reference, review
+    evidence-constrained classifications and SLO proposals, and optionally
+    inspect inline artifacts through read-only MCP tools. Learners practice
+    abstention and distinguish recorded examples from live acceptance. Source
+    engine: https://github.com/jkershawrh/slo-sli-automation. Engineering
+    tracking: INTEL-83, related to INTEL-44. Publishing House will own content
+    review and AgnosticV onboarding."
+  annotations:
+    ph.rhdp.io/content-type: lab
+    ph.rhdp.io/deployment-mode: rhdp_published
+    ph.rhdp.io/github-user: jkershawrh
+    ph.rhdp.io/owner: jkershaw@redhat.com
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: rhpds/sloscope-lab
+    ph.rhdp.io/created-at: 2026-10-20T16:19:23.485Z
+  tags:
+    - publishing-house
+    - lab
+    - rhdp-published
+  links:
+    - url: https://github.com/rhpds/sloscope-lab
+      title: Repository
+      icon: github
+    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/sloscope-lab
+      title: Open in DevSpaces
+      icon: catalog
+    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+      title: Central
+      icon: dashboard
+spec:
+  type: content
+  lifecycle: experimental
+  owner: rhdp-team
+  system: publishing-house
