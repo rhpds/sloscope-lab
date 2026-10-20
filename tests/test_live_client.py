@@ -189,3 +189,19 @@ def test_same_signal_reclassification_preserves_each_report_and_clears_failed_al
     reports=[json.loads((path/'classification-report.json').read_text()) for path in archived]
     assert first in reports and second in reports
     assert (tmp_path/'baseline-reference.json').read_bytes()==baseline
+
+
+def test_canonically_modified_existing_history_refuses_retry_and_preserves_current_report(api,tmp_path):
+    url,state=api
+    assert run('reference',url,tmp_path).returncode==0
+    assert run('compare',url,tmp_path).returncode==0
+    assert run('classify',url,tmp_path).returncode==0
+    assert run('classify',url,tmp_path).returncode==0
+    before=(tmp_path/'classification-report.json').read_bytes()
+    archive=next((tmp_path/'history'/digest(state['signal'])).iterdir())
+    path=archive/'drift-signal.json';changed=json.loads(path.read_text());changed['schema_version']=True
+    path.write_text(json.dumps(changed))
+    result=run('classify',url,tmp_path)
+    assert result.returncode!=0 and 'Existing review history differs' in result.stderr
+    assert (tmp_path/'classification-report.json').read_bytes()==before
+    assert (tmp_path/'classification-receipt.json').exists()

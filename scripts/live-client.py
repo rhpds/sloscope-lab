@@ -204,12 +204,12 @@ class Client:
             try:
                 for name,value in bundle.items():
                     (temporary/name).write_text(json.dumps(value,sort_keys=True,indent=2,allow_nan=False)+'\n')
-                if {path.name:load(path) for path in temporary.iterdir()}!=bundle:
+                if digest({path.name:load(path) for path in temporary.iterdir()})!=digest(bundle):
                     raise ReviewError('Review history write did not verify')
                 temporary.rename(target)
             finally:
                 if temporary.exists():shutil.rmtree(temporary)
-        if any(path.is_symlink() for path in target.iterdir()) or {path.name:load(path) for path in target.iterdir()}!=bundle:
+        if any(path.is_symlink() for path in target.iterdir()) or digest({path.name:load(path) for path in target.iterdir()})!=digest(bundle):
             raise ReviewError('Existing review history differs from the current artifacts; archive refused')
         # A failed classification of the next comparison must not look like a current success.
         for name in reports:
