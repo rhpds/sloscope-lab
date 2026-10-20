@@ -28,12 +28,14 @@ Before running setup, predict which resources it should need: a terminal workspa
 
 === Exercise 1: Obtain the lab content
 
-If provisioning already opened the `sloscope-lab` directory, stay there. For the current draft review, clone the branch that contains these lessons. The default `main` branch still contains only the Publishing House scaffold; it cannot run these exercises yet:
+If your workspace already contains both `engine.lock.json` and `scripts/setup.sh`, stay in that repository and skip the clone block. A folder named `sloscope-lab` alone is not enough: a newly generated PH scaffold lacks the learner content.
+
+For the current draft review, clone the branch below into a new `sloscope-lab-review` directory. Run this from a writable location; if that destination already exists, preserve it and choose a new directory or verify its content before continuing. The default `main` branch still contains only the Publishing House scaffold; it cannot run these exercises yet:
 
 [source,role="execute"]
 ----
-git clone --branch codex/sloscope-showroom-lab --single-branch https://github.com/rhpds/sloscope-lab.git
-cd sloscope-lab
+git clone --branch codex/sloscope-showroom-lab --single-branch https://github.com/rhpds/sloscope-lab.git sloscope-lab-review
+cd sloscope-lab-review
 ----
 
 For published RHDP delivery, provisioning must supply a reviewed immutable content revision; this moving draft branch is a review checkout, not a released lab version. Record the checkout revision with `git rev-parse HEAD` in your brief.

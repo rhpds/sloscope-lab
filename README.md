@@ -9,8 +9,8 @@ The core path starts with the checkout business decision, a short SLI/SLO/SLA pr
 Use Python 3.11 and Git. During draft review, obtain the branch that contains the lab; default `main` is still the PH scaffold:
 
 ```bash
-git clone --branch codex/sloscope-showroom-lab --single-branch https://github.com/rhpds/sloscope-lab.git
-cd sloscope-lab
+git clone --branch codex/sloscope-showroom-lab --single-branch https://github.com/rhpds/sloscope-lab.git sloscope-lab-review
+cd sloscope-lab-review
 ```
 
 Published RHDP provisioning must supply a reviewed immutable content revision instead of this moving draft branch. Then prepare the learner workspace:

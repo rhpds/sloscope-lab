@@ -1,7 +1,7 @@
 = Inspect evidence and freeze a reference
 include::partial$_attributes.adoc[]
 
-Allow about 20 minutes. This is an author estimate pending an independent learner pilot. Start from the `sloscope-lab` directory prepared in the previous page.
+Allow about 20 minutes. This is an author estimate pending an independent learner pilot. Start from the lab repository root prepared in the previous page.
 
 == Learning objectives
 
