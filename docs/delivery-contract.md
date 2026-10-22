@@ -12,7 +12,7 @@ Topology, cluster release, worker sizing, per-user limits, concurrency, image di
 
 ## Reviewer acceptance
 
-1. Core engine PR #13 and optional MCP PR #14 are merged upstream. Both source locks select immutable merged-main commit `ca302e5727c7d4ac2d8373aa499bc3a3184bb3ab`. Re-run source/content/protocol qualification when references change; source merge does not constitute RHDP acceptance.
+1. Core engine PR #13 and optional MCP PR #14 are merged upstream. Both source locks select immutable merged-main commit `3159e84c493f628516a799a8f034fcc4c2e996a4`. Re-run source/content/protocol qualification when references change; source merge does not constitute RHDP acceptance.
 2. Render every page, verify terminal/console tabs and runtime attribute substitution, and independently complete the commands as a regular learner.
 3. Qualify the implemented namespace-scoped Ansible deploy/validate/teardown contract, controller ownership/idempotence, and restricted-user storage. See docs/live-lab.md; the old example now delegates to the implemented role. Learner access and final PH provisioning still need acceptance.
 4. Execute `qa-automation/healthcheck.yml` and `e2e.yml` with actual provisioned source/runtime paths. Those checks cover synthetic review only; qa-automation/live.yml separately exercises measured controlled telemetry and optional real model execution. Attach each result under its actual scope.

@@ -4,7 +4,7 @@ The engine fixes and optional adapter are merged into the upstream repository’
 
 - Merged core fixes: https://github.com/jkershawrh/slo-sli-automation/pull/13
 - Merged MCP adapter: https://github.com/jkershawrh/slo-sli-automation/pull/14
-- MCP source: `ca302e5727c7d4ac2d8373aa499bc3a3184bb3ab`
+- MCP source: `3159e84c493f628516a799a8f034fcc4c2e996a4`
 - SDK: `mcp==2.3.0`, installed only in `.lab/mcp-venv`
 
 From the lab repository root, after completing the core exercises:

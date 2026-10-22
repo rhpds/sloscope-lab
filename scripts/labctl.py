@@ -38,6 +38,32 @@ def verify_source():
         raise ValueError('Engine source contains local changes; acceptance requires the clean pinned source')
 
 
+def verify_abstention_challenges(signal, low_coverage, conflicting):
+    """Require the two intended experiments, each rejected for its own reason."""
+    from evidence_constraints import classification_constraints, EvidenceConstraintError
+    classification_constraints(signal)
+    low = copy.deepcopy(signal)
+    low['provenance']['coverage_ratio'] = .79
+    conflict = copy.deepcopy(signal)
+    conflict['all_breached_indicators'] = []
+    cases = (
+        ('low-coverage-signal.json', low_coverage, low,
+         'At least 0.8 measured coverage is required; collect more evidence'),
+        ('conflicting-signal.json', conflicting, conflict,
+         'Breached indicator list conflicts with measured evidence'),
+    )
+    for name, actual, expected, reason in cases:
+        if actual != expected:
+            raise ValueError(name + ' does not match the intended challenge; rerun its exercise')
+        try:
+            classification_constraints(actual)
+        except EvidenceConstraintError as exc:
+            if str(exc) != reason:
+                raise ValueError(name + ' abstained for the wrong reason') from exc
+        else:
+            raise ValueError(name + ' incorrectly admitted')
+
+
 def run(args):
     verify_source()
     from baseline import compute_baseline
@@ -138,13 +164,8 @@ def run(args):
         assert current['indicators']['error_rate']['ratio']==.023
         constraint=classification_constraints(load(out/'drift-signal.json'))
         assert {'error_rate_ratio','availability_ratio'} <= set(constraint['breached_indicators'])
-        for name in ('low-coverage-signal.json','conflicting-signal.json'):
-            try:
-                classification_constraints(load(out/name))
-            except EvidenceConstraintError:
-                pass
-            else:
-                raise AssertionError(name+' incorrectly admitted')
+        verify_abstention_challenges(load(out/'drift-signal.json'),
+            load(out/'low-coverage-signal.json'), load(out/'conflicting-signal.json'))
         preview=load(out/'export-preview.json')
         receipt=load(out/'export-receipt.json')
         assert receipt['status']=='preview_only_human_review_required'

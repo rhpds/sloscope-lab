@@ -33,6 +33,12 @@ with tempfile.TemporaryDirectory(prefix='sloscope-lab-check-') as directory:
     command('export','--bucket-ms','1000',contains='targets still require human review')
     command('boundary',contains='default live mode returns 503')
     command('check',contains='2 abstentions')
+    # A second low-coverage failure must not stand in for the conflict experiment.
+    conflict=Path(directory)/'conflicting-signal.json'
+    saved=conflict.read_text()
+    conflict.write_text((Path(directory)/'low-coverage-signal.json').read_text())
+    command('check',status=1,contains='does not match the intended challenge')
+    conflict.write_text(saved)
     # Prove the final checkpoint fails if the preserved reference has changed.
     path=Path(directory)/'baseline.json'
     baseline=json.loads(path.read_text());baseline['service']='changed-service';path.write_text(json.dumps(baseline))

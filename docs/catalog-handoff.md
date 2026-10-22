@@ -28,9 +28,16 @@ Before entering the live module, run from the assigned terminal:
 
 ```bash
 python3.11 scripts/check-learner-access.py --namespace YOUR_ASSIGNED_NAMESPACE
+python3.11 scripts/check-learner-readiness.py --namespace YOUR_ASSIGNED_NAMESPACE --timeout 120
 ```
 
 The preflight uses authorization queries and exits nonzero for missing rights, excessive tested rights, authentication errors or ambiguous results. It does not enumerate every possible permission or prove cluster isolation. Review all inherited roles separately. It checks generic Secret access and the specific model Secret name; supply `--model-secret` if the allocation uses a name other than `sloscope-model`. It reads no Secret, opens no shell and changes no configuration. Actual forwarding, scenario patching and HTTP collection still need the learner walk.
+
+The separate readiness gate uses only the four existing named Deployment reads. It requires the current generation to be observed and all desired replicas to be updated, ready and available, within the declared timeout. Listing an unready Deployment is not acceptance. The live lesson chains authorization, readiness and loopback forwarding with `&&`; failed checks stop before forwarding and need facilitator repair.
+
+## Publishing House authoring workspace
+
+The devfile's authoring credential setup uses system certificate trust. If PH requires an enterprise CA not in that trust store, configure `PH_CA_BUNDLE` with the approved CA bundle path; certificate verification stays enabled. Credential-bearing redirects and HTTP/TLS errors fail setup. The auth directory is private (`0700`), and complete credential JSON is atomically installed with `0600` permissions. Existing credentials have permissions repaired before reuse; key values and prefixes are not logged. Configure the author's Git identity separately. These authoring credentials are not a catalog learner model allocation, and this change makes no live API-access or PH approval claim.
 
 Two terminal sessions must share a writable checkout/workspace and loopback host. Verify Python 3.11, Git and `oc` before the pilot. One terminal holds the private forward while the other runs the HTTP client. A remote terminal's loopback address is not reachable from a desktop browser; the live terminal path requires no public application Route. Broader browser access would need a separate reviewed authentication design.
 
