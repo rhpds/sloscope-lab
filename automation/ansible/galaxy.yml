@@ -1,0 +1,12 @@
+---
+namespace: rhpds
+name: sloscope_lab
+version: 0.1.0
+readme: README.md
+authors:
+  - RHDP SLOscope lab maintainers
+description: Controlled telemetry and namespace-scoped SLOscope RHDP lab contract
+license: [Apache-2.0]
+repository: https://github.com/rhpds/sloscope-lab
+dependencies:
+  kubernetes.core: "==6.4.0"

@@ -1,0 +1,107 @@
+= Optional: Hand off an evidence review through MCP
+include::partial$_attributes.adoc[]
+
+Allow about 20 minutes. This is an author estimate pending an independent learner pilot. Complete the core exercises first. This extension requires the separately pinned adapter and optional SDK dependencies. The facilitator must review and enable that source reference before offering the module; the core lab remains usable without it.
+
+== Why: Make the next review reproducible
+
+You have a measured change and a bounded review of the checkout service. Now another SRE or an assistant working with your team needs to inspect the same evidence. Copying a conclusion into a conversation loses the inputs and checks behind that conclusion. Asking each reviewer to restate the policy in a prompt also leaves room for different interpretations.
+
+The handoff should preserve the artifact being reviewed and apply the same implemented evidence policy. That gives a teammate something they can inspect and challenge before a target or alert changes. It does not establish who collected the telemetry or whether a proposed operational action is appropriate.
+
+== Learning objectives
+
+* Explain the roles of an MCP client, server, and tool in an evidence handoff.
+* Predict when the shared evidence policy should admit an input or abstain.
+* Verify that a real protocol exchange preserves the adapter's limited capabilities.
+* Record what another reviewer can reuse and what still needs independent approval.
+
+== Learn: Separate the connection from the decision
+
+Model Context Protocol (MCP) describes how a client discovers and calls tools exposed by a server. A compatible assistant host can use a client to make those calls. In this exercise, a small SDK client plays that role directly, so you can test the connection without configuring an assistant or calling a model.
+
+The SLOscope server runs as a local process. Client and server exchange protocol messages through standard input and output, called stdio. A tool is a named operation with an input schema and a result. Connecting to this server does not give the client a general shell or access to the filesystem.
+
+The adapter exposes exactly 4 tools:
+
+* `compute_baseline` calculates a baseline from an inline evidence artifact.
+* `measure_drift` compares an inline reference with a later evidence artifact.
+* `review_classification` checks a drift signal and can review a supplied classification report.
+* `review_proposal` checks a supplied proposal against a baseline.
+
+These tools reuse the core engine's deterministic functions and evidence constraints. The integration changes how a caller reaches those checks; it adds no separate prompt-based policy. Inputs are inline JSON artifacts. There are no tools for arbitrary paths, URLs, credentials, telemetry queries, model calls, deployment, or remediation.
+
+Each tool is annotated read-only, non-destructive, idempotent, and closed-world. These annotations communicate intent to a host; they do not independently sandbox a host. Review an actual host's controls before enabling it. A host can see the artifacts you provide, so start with this lab's synthetic evidence and keep private telemetry and credentials out of the exchange.
+
+== Show: The same handoff can have two valid outcomes
+
+Suppose you give the next reviewer the synthetic drift signal from the core exercises. Its measured coverage satisfies the policy, and the breach list agrees with the measured indicators. Calling `review_classification` can return `admissible` with the evidence constraint and permitted classifications. This means the implemented checks passed; it does not prove a causal explanation or approve a target change.
+
+Now give the same reviewer a copy whose reported coverage is 0.79. The policy requires at least 0.8. The appropriate result is `abstained`, even if an assistant can produce a confident explanation of the error increase. The next task is to obtain adequate evidence, rather than use that explanation to choose a target.
+
+Both outcomes are useful to the handoff. One identifies what can proceed to human review; the other identifies why the review must stop. Neither authorizes an operational change.
+
+== Do: Predict, connect, and inspect
+
+=== Choose the next action before running the check
+
+For each input, write a prediction and the next action in your decision brief:
+
+. The lab's unchanged drift signal: should the policy admit it for review or abstain?
+. A copy with coverage 0.79: should the team proceed to a target decision or obtain more evidence?
+. A request to delete a pod or open a local file: which of the 4 tools should perform it?
+
+Read `docs/mcp-extension.md`. Confirm the immutable adapter source reference in `mcp.lock.json`, the optional dependency environment, and the tool boundaries before connecting. Do not substitute a simulated response if the adapter is unavailable.
+
+=== Run the real protocol checkpoint
+
+From the lab repository root, install the optional environment and run its check:
+
+[source,role="execute"]
+----
+bash scripts/setup-mcp.sh
+.lab/mcp-venv/bin/python scripts/check-mcp.py
+----
+
+The client starts a genuine stdio server, initializes a session, and discovers exactly the 4 documented tools. It then submits the lab's drift signal to `review_classification` and repeats the call with coverage reduced to 0.79. The check requires an admissible result followed by abstention. It also checks the tool annotations and input schemas. The server process exits when the client session closes.
+
+The check prints values from the actual tool-discovery and review responses. Before the final `PASS`, expect the following shape; `<digest>` is the 64-character digest returned for your current signal, not text to enter:
+
+----
+Discovered tools: compute_baseline, measure_drift, review_classification, review_proposal
+review_classification status: admissible
+input_sha256: <digest>
+coverage_ratio: 0.97
+breached_indicators: availability_ratio, error_rate_ratio
+low-coverage review status: abstained
+reason: At least 0.8 measured coverage is required; collect more evidence
+PASS: discovered 4 bounded tools; real stdio review admitted measured evidence and abstained on low coverage
+----
+
+== Verify: Explain what the result supports
+
+Compare the result with your predictions. Copy the returned digest, coverage, breach identities, and abstention reason into your handoff note. The check compares the returned digest with the canonical JSON digest of the exact signal it submitted, and checks the returned coverage and breach identities against that signal. A missing or inconsistent structured result fails the check; it is not replaced with an expected summary.
+
+Compare `input_sha256` with the digest printed in the core `review` result from module 2: the same unchanged signal should produce the same digest across the two interfaces. It differs from `reference.sha256`, which identifies the saved baseline file bytes. These identify different artifacts, so they should not be treated as interchangeable.
+
+The unchanged signal should be admitted for review; the low-coverage copy should abstain; none of the tools can delete a pod or open a file. If the command fails, inspect the failure rather than counting any nonzero exit as a successful abstention. If the pinned adapter is unavailable, mark the optional module unavailable.
+
+This is an integration test because a real SDK client and server exchange protocol messages over stdio. The input remains synthetic. Passing does not establish model quality, compatibility with a particular assistant host, external telemetry access, or deployed alert behavior. Those require their own qualification.
+
+== Learning checkpoint
+
+A teammate says, “The assistant called the tool successfully, so we can apply its proposed target.” Explain the missing decision. A successful call establishes that the protocol worked; an admissible review establishes that the implemented evidence checks passed. The service owner still needs to review the target, metrics, and alert behavior before any rollout.
+
+== Troubleshooting
+
+A missing SDK is an optional-dependency issue; install it only in the extension environment. A waiting stdio server is not a browser URL. Do not expose it through a network listener to make it reachable. Host configuration differs across products, so use the host's normal review and approval controls.
+
+== Takeaway: Transfer the evidence and its limits
+
+MCP provides a reusable route into the lab's evidence checks. Its value in this scenario is a handoff another reviewer can repeat with the same artifacts and implemented policy. It does not turn a review into a rollout or make an unsupported explanation reliable.
+
+Add a short note to your decision brief: identify the artifact and source reference used, record the admitted and abstained outcomes, state the next action for insufficient coverage, and name the human decision still required before changing the service. If your team later selects an assistant host, record host-specific qualification as a separate remaining step. Continue to xref:99-conclusion.adoc[assemble and review your recommendation], retaining your brief before cleanup.
+
+== Learning outcomes
+
+You should now be able to explain the client/server/tool roles, predict admission and abstention for the worked examples, distinguish protocol success from an approved service change, and hand another reviewer evidence with its limitations intact.

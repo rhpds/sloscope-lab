@@ -1,0 +1,143 @@
+= Inspect evidence and freeze a reference
+include::partial$_attributes.adoc[]
+
+Allow about 20 minutes. This is an author estimate pending an independent learner pilot. Start from the lab repository root prepared in the previous page.
+
+== Learning objectives
+
+* Decide whether a telemetry artifact is an appropriate basis for a reliability review.
+* Preserve a reproducible comparison reference without turning observed behavior into a customer commitment.
+
+== Show: A target request without an evidence basis
+
+Example Retail is preparing a checkout promotion. The product owner asks, "We have a new error report. Should we change our reliability targets or deploy a new alert before we proceed?"
+
+As the SRE, your first deliverable is an evidence basis for that decision. A dashboard number without a service identity, time window, unit, or comparison point can send the team toward the wrong service or an unjustified target change. The customer concern is a checkout experience that behaves as expected. The business decision is how to assess that risk; this lab has no transaction-value or conversion data, so it cannot quantify lost sales.
+
+The supplied artifact is explicitly synthetic. You will use it to practice the review, not to claim that a real promotion is ready.
+
+== Learn: A baseline describes behavior; an SLO expresses intent
+
+As the xref:02-how-it-works.adoc[system view] explains, an SLI measures behavior and an SLO states the intended objective. A baseline summarizes observed behavior over a declared window. Computing one does not tell you what customers need or authorize a weaker objective when the service worsens.
+
+Before comparing measurements, ask 4 questions:
+
+* *Scope:* Is this the service, namespace, and telemetry window under review?
+* *Units:* Does the number represent a ratio, percentage, count, or duration?
+* *Coverage:* How much of the intended evidence does the collector report as available?
+* *Reference:* Can another reviewer reproduce the comparison using the same saved baseline?
+
+=== Worked example: Errors, coverage, and latency answer different questions
+
+The synthetic reference has 230 errors out of 100000 requests. Its error ratio is `230 / 100000 = 0.0023`, equivalent to *0.23%*. It is not 0.23 as a ratio, which would mean 23%. The reported coverage is 0.97; that does not mean 97% request success. Coverage describes the evidence available to this policy, while the error ratio describes the counted requests.
+
+*p99* is the 99th percentile: the threshold at or below which 99% of the measured requests fall. A classic histogram records cumulative counts at declared upper bounds, named `le` (less than or equal). A bucket at 1 second counts all requests at or below 1 second, including those in smaller buckets. Do not add cumulative bucket counts together.
+
+The computed p99 latency is 5000 ms for this fixture. That is a summary of the supplied distribution, not a customer-approved 5-second target. The histogram's declared boundaries also limit which exact thresholds the current exporter can select. You will use that distinction in module 3.
+
+Your technical advantage is a reproducible evidence chain: inspect identity and units, compute the reference in code, and preserve the exact bytes before evaluating a change.
+
+== Do: Establish the evidence basis
+
+=== Exercise 1: Inspect before recommending
+
+*Predict:* If you find the wrong namespace or an unknown window, would you proceed with a target recommendation, repair the evidence, or change the service? Choose first and explain your reason.
+
+Inspect the artifact fields and error counts:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+e = json.loads(Path('.lab/learner/evidence.json').read_text())
+print('identity:', e['service'], e['namespace'])
+print('window:', e['lookback_window'], e['provenance']['query_timestamps'])
+print('coverage:', e['coverage_ratio'])
+print('requests:', e['series']['request_total']['total'])
+print('errors:', e['series']['error_total']['total'])
+print('histogram seconds:', [b['le'] for b in e['series']['latency_histogram']['buckets']])
+PY
+----
+
+Expected output begins:
+
+----
+identity: checkout-api payments
+window: 30d {'start': '2026-06-05T12:00:00Z', 'end': '2026-07-05T12:00:00Z'}
+coverage: 0.97
+requests: 100000
+errors: 230
+----
+
+Read `lookback_window` and `provenance.query_timestamps` in `.lab/learner/evidence.json` as part of the review. Its source endpoint is a teaching placeholder. SLOscope uses the collector's reported coverage; it does not independently authenticate that endpoint or establish how every sample was obtained.
+
+==== Verify the evidence and the decision
+
+Technical check: the artifact names `checkout-api` in `payments`, reports coverage 0.97, and contains the counts used in the worked example. Keep its histogram boundary list for module 3.
+
+Decision check: choose *repair or collect the correct evidence* if service identity or scope does not match the question. A high coverage value cannot make evidence from another service relevant. For this lab, record that you are proceeding with a declared synthetic scenario, not a live release recommendation.
+
+=== Exercise 2: Preserve the comparison point
+
+*Predict:* If a collector replaced the baseline with the changed measurement on every run, what would happen to your ability to detect deterioration?
+
+Compute and save the empirical reference:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py baseline
+cat .lab/learner/reference.sha256
+----
+
+Expected message:
+
+----
+Reference frozen; error ratio = 0.0023; p99 = 5000 ms
+----
+
+The digest identifies the exact saved baseline bytes. It can expose an accidental local change; it does not authenticate the telemetry's origin. Inspect the calculated indicators:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python -m json.tool .lab/learner/baseline.json
+----
+
+==== Verify the reference and the decision
+
+Try the baseline command again. This check requires the specific reference-preservation error; an unrelated runtime failure does not count as success.
+
+[source,role="execute"]
+----
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py baseline 2>&1) || status=$?
+[ "$status" -eq 1 ] && [[ "$result" == *"Reference already exists"* ]] || {
+  printf '%s\n' "$result"
+  echo 'FAIL: did not observe the intended reference-preservation rejection'
+  exit 1
+}
+echo 'PASS: reference replacement refused'
+----
+
+Expected result: an error explains that the reference already exists, followed by `PASS: reference replacement refused`.
+
+Decision check: replacing the reference automatically could normalize the deterioration you need to assess. Keep the original for this comparison. Promoting a new reference is a separate reviewed decision, not a side effect of collecting more data.
+
+== Takeaway: Give the team an evidence contract
+
+In the *Evidence basis* section of your decision brief, record:
+
+* The service, namespace, declared window, and synthetic provenance.
+* The reference error ratio in both ratio and percentage units, and the reported coverage as a separate quantity.
+* The saved reference digest and the limits of what it proves.
+* Why these observations do not establish a customer target or justify changing one.
+
+A usable workplace handoff says, "This is the measurement we are comparing, with these limits," before it says, "Change the target." In the next module, you will compare a controlled change with this preserved reference and decide when the evidence is sufficient to continue.
+
+== Troubleshooting
+
+If a reference already exists on your first attempt, check whether you completed this exercise earlier. Do not delete it just to make a command succeed. Use its digest and provenance to determine whether it belongs to your current attempt.
+
+== Learning outcomes
+
+You should now be able to explain the distinction between measured behavior and a service commitment, recognize why scope and units affect a business decision, and preserve a comparison reference that another reviewer can inspect.

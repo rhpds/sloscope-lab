@@ -1,0 +1,10 @@
+---
+# Trusted operator only: pod exec can inspect engine environment credentials.
+# Learners use scripts/live-client.py and the reviewed port-forward permission contract.
+- name: Validate existing isolated live SLOscope environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: "{{ playbook_dir }}/../automation/ansible/roles/sloscope_lab"
+      sloscope_action: validate

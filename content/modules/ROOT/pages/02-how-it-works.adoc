@@ -1,0 +1,73 @@
+= Understand the reliability terms and architecture
+include::partial$_attributes.adoc[]
+
+Before you run anything, follow the path from a customer concern to measured evidence and a reviewed recommendation. You do not need to become an SRE specialist to use the rest of the lab.
+
+== Learning objectives
+
+* Explain the difference between a measurement, a target, and an agreement.
+* Trace the 2 evidence paths through SLOscope.
+* Identify which infrastructure is runnable in this lab and which live components still need qualification.
+
+== Learn: SLI, SLO, and SLA in a minute
+
+* *SLI (service level indicator)* is what you measure. For checkout, an example is the proportion of eligible requests that succeed.
+* *SLO (service level objective)* is the target for that indicator over a stated period. "At least 99.9% of eligible checkout requests succeed over 30 days" is an illustrative objective, not a target chosen for this lab.
+* *SLA (service level agreement)* is the commitment agreed with a customer or user, including the consequences or remedy if the agreed service level is missed. Generating a threshold does not create or amend that agreement.
+
+Remember: *measure, aim, agree*. An SLI tells you what happened; an SLO states the reliability you are aiming for; an SLA adds the agreement with the user. The owner must choose the useful indicator, evaluation period, and target before deciding whether an objective was missed.
+
+== Show: Put the terms into the checkout decision
+
+The reference contains 230 errors among 100000 requests. Its error ratio is 0.0023, or 0.23%. Under this fixture's definition, success is the complement: 99.77%. Those are measured indicators, not an objective or a customer agreement.
+
+If someone asks, "Did we break the SLA?", those counts alone are insufficient. You need the applicable agreement, the definition of eligible requests and success, and its evaluation period. The illustrative 99.9% objective above must not be applied to an unmatched fixture window as if it were an approved commitment.
+
+Similarly, SLOscope's proposal schema uses `slo_target` and `sla_target` as numerical fields. Treat the latter as a proposed threshold in a review artifact. It is not evidence of a negotiated agreement, a remedy, or commercial approval.
+
+== Learn: How SLOscope turns evidence into a review
+
+There are 2 related paths. The *target-review path* computes a baseline from telemetry and can ask a model to propose targets against that baseline. The *drift-review path* compares a later window with the preserved baseline and checks the resulting signal before optional model interpretation.
+
+image::sloscope-event-flow.svg[Event flow showing baseline and comparison-evidence paths converging at human review before export preview,link=self,window=blank,width=1100,title="Evidence flow and human decision boundary"]
+
+. *Collect and identify evidence.* In a live environment, the Go collector reads configured telemetry. Here, a fixture supplies explicitly synthetic evidence, including service, namespace, window, counts, and reported coverage.
+. *Calculate and preserve a reference.* Deterministic code computes indicators. The learner workflow freezes the baseline and records its digest so a later comparison cannot silently redefine normal.
+. *Compare with the reference.* A live workflow uses a later comparable telemetry window. This training scenario edits the original fixture while retaining its query window, so it is a controlled what-if comparison, not an independent collection. The drift engine calculates deviations and tolerance-band breaches. A breach means the observation crossed that comparison band. It does not by itself prove an SLO violation or a root cause.
+. *Apply evidence constraints.* Identity, coverage, finite numbers, and consistency matter. Inadequate or conflicting input produces abstention. Admissible input can proceed to interpretation, but acceptance does not establish that a causal explanation is true.
+. *Review the interpretation or target.* Optional live model calls provide advisory classifications or proposals. The core training path uses deterministic review and separately identified recorded examples; it makes no real model calls.
+. *Choose a next step.* A human reviews the evidence and business context. A qualified histogram boundary can produce an export preview. Deployment, target approval, customer commitments, and operational action remain separate decisions.
+
+The distinction matters during a promotion review: changing the baseline could hide deterioration, while exporting a syntactically valid rule could create an alert that has never been tested against real traffic.
+
+== Show: Infrastructure and trust boundaries
+
+The top panel is the runnable synthetic training arrangement. The lower panel is the implemented private dev source contract: controlled HTTP traffic, namespaced Prometheus, the collector/API, and persistent artifact storage. A source contract is not proof that every component has passed live acceptance. RHDP terminal hosting, published learner access, and onboarding remain separate gates.
+
+image::sloscope-infrastructure.svg[Infrastructure diagram separating synthetic terminal and MCP exercises from the implemented private dev contract with controlled HTTP traffic, namespaced Prometheus, collector/API, persistent storage, and an optional model connection,link=self,window=blank,width=1100,title="Training workspace and private dev source contract"]
+
+* *Learner experience:* Classic Showroom serves the guide; the terminal runs pinned Python source in an isolated workspace. The OpenShift console tab supports the intended RHDP environment, but the core exercises do not log in to a cluster.
+* *Runnable training components:* the baseline and drift engine, local evidence files, and in-process API checks. A test client calls the HTTP handlers for boundary exercises; that does not mean a production API service is running.
+* *Optional integration:* an MCP client sends inline JSON to a separate local stdio server process, which invokes the same engine checks. It does not query telemetry, call a model, read arbitrary paths, or deploy anything.
+* *Implemented private dev contract:* a controlled checkout service and traffic generator, namespaced Prometheus with a static scrape, the SLOscope collector/API, and a persistent artifact PVC. The scoped Ansible role deploys, validates, and tears down owned resources. There is no public Route, broad RBAC, or service-account token mount. Actual telemetry, storage, lifecycle, and model outcomes require their own live evidence.
+* *Model and delivery gates:* model-optional startup permits telemetry work while a dedicated Secret is pending; model helpers are opt-in, and the profile is not API-level authorization. Learners use the API through a reviewed loopback port-forward and must not receive engine pod-exec or Secret reads. Eventual learner terminal isolation, per-allocation model credentials/broker, OAuth/route access, model qualification, and Publishing House catalog review remain pending until separately accepted.
+
+Public source and package downloads are setup/build dependencies. They are not customer telemetry destinations in the core exercises. A real deployment also needs an explicit decision about which telemetry may be sent to its chosen model endpoint.
+
+== Do: Trace 1 decision before touching the terminal
+
+Suppose a later bundle reports more errors, but its coverage is below the configured policy. Choose the next step: export a new alert, ask a model for a more confident explanation, or obtain adequate evidence.
+
+=== Verify
+
+The appropriate next step is to obtain or repair evidence. Trace that route on the event diagram: the input reaches the constraints, the review abstains, and no new operational authority follows. A model connection or an export command cannot fill the measurement gap.
+
+Then point to the infrastructure component you would need for a real telemetry comparison. The private Prometheus scrape and collector path belong to the optional live-controlled module. Running a local synthetic exercise does not validate that connection. Use xref:07-live-lab.adoc[the optional live path] only after the facilitator has provisioned and qualified the selected source/image and namespace.
+
+== Take away
+
+You now have a map for the investigation: define the user concern, identify the indicator, compare suitable evidence, inspect the constraint result, and give the owner a bounded recommendation. Continue to xref:02-details.adoc[prepare the workspace], then apply that method to the checkout scenario.
+
+== Learning outcomes
+
+You should now understand the role of each reliability term, how the baseline and drift paths meet at human review, and why runnable training tools and a qualified live service are different delivery milestones.

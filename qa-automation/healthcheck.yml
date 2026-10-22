@@ -1,0 +1,31 @@
+---
+- name: Verify SLOscope terminal prerequisites
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Require provisioned immutable source and runtime paths
+      ansible.builtin.assert:
+        that:
+          - sloscope_source is defined
+          - sloscope_python is defined
+          - sloscope_lab_root is defined
+        fail_msg: "Provisioning must supply sloscope_source, sloscope_python, and sloscope_lab_root"
+    - name: Check Python runtime and import the evidence policy
+      ansible.builtin.command:
+        argv:
+          - "{{ sloscope_python }}"
+          - -c
+          - "import sys; import evidence_constraints, server; sys.exit(0 if sys.version_info[:2] == (3,11) else 'Python 3.11 required')"
+      environment:
+        PYTHONPATH: "{{ sloscope_source }}/analysis:{{ sloscope_source }}/backend"
+      changed_when: false
+    - name: Match provisioned engine to the learner source lock
+      ansible.builtin.command:
+        argv:
+          - "{{ sloscope_python }}"
+          - -c
+          - "import json,subprocess,sys; from pathlib import Path; lock=json.loads((Path(sys.argv[1])/'engine.lock.json').read_text()); actual=subprocess.check_output(['git','-C',sys.argv[2],'rev-parse','HEAD'],text=True).strip(); sys.exit(0 if actual==lock['commit'] else 'Engine commit differs from lab lock')"
+          - "{{ sloscope_lab_root }}"
+          - "{{ sloscope_source }}"
+      changed_when: false

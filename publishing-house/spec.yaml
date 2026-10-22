@@ -16,15 +16,29 @@ project:
   automation_type: "ansible"
   description: "Hands-on SRE lab using SLOscope to collect and inspect telemetry evidence, compare drift against a preserved reference, review evidence-constrained classifications and SLO proposals, and optionally inspect inline artifacts through read-only MCP tools. Learners practice abstention and distinguish recorded examples from live acceptance. Source engine: https://github.com/jkershawrh/slo-sli-automation. Engineering tracking: INTEL-83, related to INTEL-44. Publishing House will own content review and AgnosticV onboarding."
   # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
-  workflow_id: ""
+  jira_ticket: "RHDPCD-2154"
+  workflow_id: "86950aba-3493-47c0-8b56-46648cc3b161"
 
 spec:
-  title: ""
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  title: "Make checkout reliability decisions with SLOscope"
+  learning_objectives:
+    - Explain SLI/SLO/SLA and trace evidence flow and infrastructure boundaries before setup
+    - Write a reliability decision brief with observed evidence, uncertainty, accountable owner, and next action
+    - Inspect service identity, reported coverage, telemetry window, and histogram vocabulary
+    - Preserve a reference baseline and measure a controlled changed window
+    - Demonstrate abstention for insufficient or contradictory evidence
+    - Verify export boundaries and distinguish previews from operational approval
+    - Optionally review inline artifacts through a bounded MCP protocol
+  modules:
+    - {id: setup, title: Business decision, reliability primer, architecture, and setup, duration_min: 15}
+    - {id: module-01, title: Inspect evidence and freeze a reference, duration_min: 20}
+    - {id: module-02, title: Measure drift and practice abstention, duration_min: 30}
+    - {id: module-03, title: Review targets and export safely, duration_min: 25}
+    - {id: conclusion, title: Owner-facing recommendation and cleanup, duration_min: 10}
+    - {id: optional-mcp, title: Optional MCP evidence review, duration_min: 20}
+    - {id: optional-live, title: Optional live controlled telemetry and constrained interpretation, duration_min: 45}
   environment:
-    platform: ""               # ocp | rhel-vms — determines which sizing fields apply
+    platform: "ocp"               # ocp | rhel-vms — determines which sizing fields apply
     topology: ""               # shared-cluster | per-student | cnv-pool
     cloud_provider: cnv        # cnv | aws | azure | aro | rosa | google | gcp — cnv is default
     max_concurrent_users: null # required if topology = shared-cluster
@@ -46,17 +60,17 @@ spec:
 
     # --- Common fields (both platforms) ---
     aap_version: ""                    # required if AAP in products
-    ai_requirement: ""                 # maas | gpu | none
-    ai_model_tier: ""                  # open-source | frontier (if ai_requirement = maas or gpu)
-    ai_model_name: ""                  # specific model e.g. granite-3.1-8b
+    ai_requirement: "maas"                 # maas | gpu | none
+    ai_model_tier: "open-source"                  # open-source | frontier (if ai_requirement = maas or gpu)
+    ai_model_name: "qwen3-235b"                  # specific model e.g. granite-3.1-8b
     ai_justification: ""               # required if ai_model_tier = frontier or ai_requirement = gpu
     non_ga_products: []                # list of non-GA products/versions
     non_ga_access_plan: ""             # how access is provided for non-GA products
-    external_services: []              # named external service dependencies e.g. [github.com]
+    external_services: [github.com, pypi.org, files.pythonhosted.org, registry.npmjs.org, "PH-approved per-allocation MaaS endpoint"]              # named external service dependencies e.g. [github.com]
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
-  duration_hours: null
-  audience: ""               # beginner | intermediate | advanced
+  duration_hours: 3
+  audience: "intermediate"               # beginner | intermediate | advanced
 
 development:
   automation:
@@ -80,9 +94,9 @@ approval_checklist:
 
   content:
     prerequisites_verifiable: null
-    assessment_strategy: ""
-    catalog_gap: ""
-    design_overview: ""
+    assessment_strategy: "Exact-outcome technical checks plus a service-owner decision-brief rubric; brief reasoning is human-reviewed. Optional real MCP exchange; independent RHDP/live acceptance pending"
+    catalog_gap: "Proposed evidence-review/abstention SRE lab; RCARS overlap check pending, no uniqueness claim"
+    design_overview: "publishing-house/spec/design.md; source locks and delivery contract bound the recorded core path and separate live gates"
     module_summaries: []
     rcars_overlap_pct: null
     rcars_top_matches: []

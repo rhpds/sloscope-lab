@@ -1,0 +1,36 @@
+= Make checkout reliability decisions with SLOscope
+include::partial$_attributes.adoc[]
+
+A promotion is coming. The checkout team wants to move quickly, customer support wants fewer failed requests, and the service owner wants a clear recommendation. An error count has increased. Should the team investigate the service, change its reliability target, or collect better evidence before acting?
+
+You take the SRE role for fictional *Example Retail*. Your job is to turn technical observations into a decision the service owner can defend. SLOscope helps you measure change, check whether the evidence supports interpretation, and expose the limits of a proposed target. You keep responsibility for the recommendation.
+
+== Learning objectives
+
+* Explain SLI, SLO, and SLA in the context of a customer journey.
+* Connect a reliability decision to measured evidence and its limitations.
+* Recognize when to investigate, seek more evidence, or review a target.
+* Produce a short decision brief another service owner can use.
+
+== What you will take away
+
+Your deliverable is a *checkout reliability decision brief*: what changed, what remains uncertain, the action you recommend, and the evidence needed next. Each module adds to that brief. Passing a command check supports the brief; it does not replace your reasoning.
+
+The lab follows a repeated pattern:
+
+. *Learn* the concept and why it matters to the service owner.
+. *Show* a worked example of evidence and interpretation.
+. *Do* an investigation and make a choice before comparing results.
+. *Take away* a recommendation, a boundary, or a question for the next owner.
+
+== Your route through the lab
+
+Start with xref:01-overview.adoc[the business assignment], then xref:02-how-it-works.adoc[the short reliability primer and architecture]. Prepare the workspace only after you can explain how the pieces fit together.
+
+The core path has an estimated duration of about 100 minutes, plus 20 minutes for optional Model Context Protocol (MCP) integration and 45 minutes for the separately provisioned live telemetry extension. These are author estimates pending a learner pilot.
+
+IMPORTANT: Exercises use synthetic telemetry and recorded examples. You can practice a real review method, but these results do not establish customer impact, model quality, live alert behavior, or readiness to change a production service.
+
+== Learning outcomes
+
+By the end, you should be able to connect a technical reliability signal to a business recommendation, explain the evidence behind it, and identify what needs further validation before acting.

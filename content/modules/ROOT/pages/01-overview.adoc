@@ -1,0 +1,78 @@
+= Decide what the checkout team should do next
+include::partial$_attributes.adoc[]
+
+== Why: Reliability is a product decision
+
+Example Retail is preparing a checkout promotion. The product owner wants the service ready for additional activity. Support wants customers to complete checkout without repeated failures. The platform team wants alerts that lead to useful action rather than a dashboard that looks green after its targets are relaxed.
+
+You are the site reliability engineer (SRE) advising the service owner. You have a reference telemetry bundle and a deliberately changed bundle. The owner asks: "Does this change justify a new reliability target or alert, and what should we do before the promotion?"
+
+Your task is to recommend the next step. You may recommend investigation, additional measurement, or review of a proposed target. You must separate a technical observation from a claim about customers, a root cause, or a release approval.
+
+== Learning objectives
+
+* Translate the owner's question into an evidence review.
+* Distinguish measured request behavior from customer and commercial outcomes.
+* Choose a next action with an owner and an evidence requirement.
+
+== Show: What a useful recommendation sounds like
+
+A weak update says, "The script passed; the service is ready."
+
+A useful update says, "The synthetic scenario has a higher request error ratio than the preserved reference. The measurements justify investigating the change. They do not identify its cause or quantify abandoned orders. I recommend keeping the current commitment unchanged while the service owner validates the affected customer journey and the monitoring data."
+
+The second update gives the owner a decision boundary. It is still a recommendation, not proof that the promotion must stop or that a particular fix is correct.
+
+== Learn: Use 3 kinds of evidence
+
+* *Observed:* service identity, telemetry window, reported coverage, request/error counts, calculated indicators, and measured change.
+* *Interpreted:* a possible explanation or a proposed reliability target. These need review against the observations and business context.
+* *Still needed:* user-journey measurements, an approved objective and evaluation period, live alert tests, root-cause evidence, and the accountable owner's decision.
+
+The synthetic errors are failed requests in a fixture. A request is not necessarily an order, a customer, or a payment. Retries and application behavior can change that relationship. Do not turn the error count into lost revenue or abandoned purchases.
+
+== Do: Start your decision brief
+
+Keep notes in your editor, or download xref:attachment$decision-brief.md[the decision-brief template]. You will fill 3 sections during the lab:
+
+. *Evidence basis:* what you measured, where it applies, and why the reference is comparable.
+. *Reliability assessment:* what changed, what you cannot explain yet, and when evidence is inadequate.
+. *Target and release recommendation:* what should happen next, who owns it, and what would change your recommendation.
+
+Before looking at any numbers, write 1 sentence answering the service owner's question as you currently understand it. Leave the recommendation open until you have inspected the evidence. You can keep this brief outside the exercise directory so cleanup does not remove it.
+
+== Verify: Identify the decision, not just the tool
+
+Explain to a partner, or in your notes:
+
+* Who will use your recommendation?
+* Which customer journey motivates the review?
+* What would you need before claiming that failed requests mean lost sales?
+
+A useful answer names the service owner, the checkout journey, and missing journey/business measurements. It does not claim that a model or a schema can approve a business commitment.
+
+== Plan your time
+
+[cols="2,1,3",options="header"]
+|===
+|Activity |Estimate |Decision it supports
+|Scenario, reliability concepts, architecture, and setup |15 minutes |What are we deciding, and how does evidence reach the reviewer?
+|Evidence and reference |20 minutes |Are these measurements a usable basis for comparison?
+|Drift and abstention |30 minutes |What changed, and is the evidence sufficient to interpret it?
+|Review and export |25 minutes |What can the owner approve, reject, or investigate next?
+|Decision brief and cleanup |10 minutes |Can another owner understand and reproduce the recommendation?
+|Optional MCP |20 minutes |Can another tool or reviewer apply the same evidence boundary?
+|Optional live telemetry |45 minutes |Can we preserve the reference, inspect a real changed window, and verify recovery?
+|===
+
+The core totals 100 minutes; both optional extensions bring the estimate to 165 minutes. The live extension needs a provisioned allocation and measured-window warm-up; it does not use the synthetic core as live evidence. These are author estimates. An independent learner pilot is still needed to validate pacing.
+
+== Take away: A repeatable review method
+
+The solution you are learning is a disciplined handoff from telemetry to an accountable decision. SLOscope contributes measurements, consistency checks, and reviewable artifacts. Your brief supplies the service context, uncertainty, and proposed next action.
+
+Continue to xref:02-how-it-works.adoc[how reliability terms and the architecture fit together] before opening the terminal.
+
+== Learning outcomes
+
+You should now be able to state the business decision, identify its owner, and explain why request telemetry alone cannot establish customer or commercial impact.

@@ -1,0 +1,20 @@
+---
+- name: Validate scoped action and namespace
+  ansible.builtin.assert:
+    that:
+      - sloscope_action in ['deploy', 'validate', 'teardown']
+      - sloscope_namespace is match('^[a-z0-9]([a-z0-9-]*[a-z0-9])?$')
+      - sloscope_namespace | length <= 63
+    fail_msg: "Use an existing isolated namespace and deploy, validate, or teardown"
+
+- name: Deploy the isolated live lab
+  ansible.builtin.include_tasks: deploy.yml
+  when: sloscope_action == 'deploy'
+
+- name: Validate actual telemetry and optional model execution
+  ansible.builtin.include_tasks: validate.yml
+  when: sloscope_action == 'validate'
+
+- name: Remove only managed lab resources
+  ansible.builtin.include_tasks: teardown.yml
+  when: sloscope_action == 'teardown'

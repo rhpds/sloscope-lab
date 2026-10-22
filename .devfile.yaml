@@ -28,60 +28,82 @@ commands:
     exec:
       component: dev-tools
       commandLine: |
-        SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+        python3 - <<'PY'
+        import json
+        import os
+        from pathlib import Path
+        import ssl
+        import sys
+        import tempfile
+        from urllib.request import Request, HTTPSHandler, HTTPRedirectHandler, build_opener
 
-        AUTH_FILE=/home/user/.config/publishing-house/auth.json
-        if [ -f "$AUTH_FILE" ] && grep -q "litellm_key" "$AUTH_FILE" 2>/dev/null; then
-          echo "auth.json already configured, skipping"
-        else
-          CENTRAL_URL="https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com"
+        CENTRAL_URL = "https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com"
 
-          SETUP_RESP=$(curl -sk -X POST "${CENTRAL_URL}/api/v1/auth/keys/anonymous" \
-            -H "Authorization: Bearer ${SA_TOKEN}")
+        class NoRedirect(HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                return None
 
-          API_KEY=$(echo "$SETUP_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['api_key'])" 2>/dev/null)
-          USER_EMAIL=$(echo "$SETUP_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['user_email'])" 2>/dev/null)
+        def setup():
+            # This authoring credential is distinct from each learner allocation's model Secret.
+            auth_dir = Path.home() / ".config" / "publishing-house"
+            auth_file = auth_dir / "auth.json"
+            if auth_dir.is_symlink() or auth_file.is_symlink():
+                raise ValueError("Credential paths must not be symbolic links")
+            auth_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+            auth_dir.chmod(0o700)
+            if auth_file.exists():
+                auth_file.chmod(0o600)
+                existing = json.loads(auth_file.read_text())
+                if all(isinstance(existing.get(k), str) and existing[k].strip()
+                       for k in ("credential", "litellm_key", "litellm_endpoint", "litellm_model")):
+                    print("Workspace auth already configured")
+                    return
 
-          if [ -z "$(git config --global user.email)" ] && [ -n "$USER_EMAIL" ]; then
-            git config --global user.email "$USER_EMAIL"
-          fi
+            # Use system trust, or an explicitly supplied enterprise CA bundle. No TLS bypass.
+            context = ssl.create_default_context(cafile=os.environ.get("PH_CA_BUNDLE") or None)
+            opener = build_opener(HTTPSHandler(context=context), NoRedirect())
+            def post(path, bearer, payload=None):
+                request = Request(CENTRAL_URL + path, method="POST",
+                    data=json.dumps(payload).encode() if payload is not None else b"",
+                    headers={"Authorization": "Bearer " + bearer, "Content-Type": "application/json"})
+                # HTTP, TLS and redirect errors abort setup. Never echo response bodies or keys.
+                with opener.open(request, timeout=30) as response:
+                    return json.load(response)
 
-          if [ -z "$(git config --global user.name)" ]; then
-            GITHUB_USER=$(echo "url=https://github.com" | git credential fill | awk -F= '/password/ {print $2}' | xargs -I {} curl -s -H "Authorization: token {}" https://api.github.com/user | awk -F'"' '/"login":/ {print $4}')
-            if [ -n "$GITHUB_USER" ]; then
-              git config --global user.name "$GITHUB_USER"
-            fi
-          fi
+            token = Path("/var/run/secrets/kubernetes.io/serviceaccount/token").read_text().strip()
+            if not token:
+                raise ValueError("Missing workspace identity")
+            identity = post("/api/v1/auth/keys/anonymous", token)
+            api_key = identity.get("api_key")
+            if not isinstance(api_key, str) or not api_key.strip():
+                raise ValueError("Missing PH credential")
+            model = post("/api/v1/litellm/keys/generate", api_key, {"project_id": "sloscope-lab"})
+            fields = ("litellm_key", "litellm_endpoint", "litellm_model")
+            if not all(isinstance(model.get(k), str) and model[k].strip() for k in fields):
+                raise ValueError("Incomplete model configuration")
+            config = {"credential": api_key, "central": CENTRAL_URL, **{k: model[k] for k in fields}}
+            temp_name = None
+            try:
+                with tempfile.NamedTemporaryFile(mode="w", dir=auth_dir, prefix=".auth-", delete=False) as tmp:
+                    temp_name = tmp.name
+                    os.fchmod(tmp.fileno(), 0o600)
+                    json.dump(config, tmp, indent=2)
+                    tmp.write("\n")
+                    tmp.flush()
+                    os.fsync(tmp.fileno())
+                os.replace(temp_name, auth_file)
+            finally:
+                if temp_name and os.path.exists(temp_name):
+                    os.unlink(temp_name)
+            print("Workspace auth configured")
 
-          if [ -n "$API_KEY" ]; then
-            LITELLM_RESP=$(curl -sk -X POST "${CENTRAL_URL}/api/v1/litellm/keys/generate" \
-              -H "Authorization: Bearer ${API_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{\"project_id\": \"sloscope-lab\"}")
-
-            LITELLM_KEY=$(echo "$LITELLM_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['litellm_key'])" 2>/dev/null)
-            LITELLM_ENDPOINT=$(echo "$LITELLM_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['litellm_endpoint'])" 2>/dev/null)
-            LITELLM_MODEL=$(echo "$LITELLM_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['litellm_model'])" 2>/dev/null)
-
-            if [ -n "$LITELLM_KEY" ]; then
-              mkdir -p /home/user/.config/publishing-house
-              cat > "$AUTH_FILE" << AUTHEOF
-        {
-          "credential": "${API_KEY}",
-          "central": "${CENTRAL_URL}",
-          "litellm_key": "${LITELLM_KEY}",
-          "litellm_endpoint": "${LITELLM_ENDPOINT}",
-          "litellm_model": "${LITELLM_MODEL}"
-        }
-        AUTHEOF
-              echo "Workspace configured: key=${LITELLM_KEY:0:8}... email=${USER_EMAIL}"
-            else
-              echo "WARNING: LiteLLM key generation failed, Claude AI will need manual API key"
-            fi
-          else
-            echo "WARNING: workspace setup failed, Claude AI will need manual API key"
-          fi
-        fi
+        if __name__ == "__main__":
+            try:
+                setup()
+            except Exception:
+                print("Workspace auth setup failed; check trusted CA, PH access and workspace identity. No credential was installed.", file=sys.stderr)
+                sys.exit(1)
+        PY
       workingDir: /projects
       label: "Setup Workspace Auth"
       group:

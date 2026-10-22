@@ -1,0 +1,19 @@
+site:
+  title: Make checkout reliability decisions with SLOscope
+  start_page: modules::index.adoc
+content:
+  sources:
+    - url: .
+      branches: HEAD
+      start_path: content
+ui:
+  bundle:
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/v2.0.3/ui-bundle.zip
+    snapshot: false
+asciidoc:
+  attributes:
+    experimental: true
+    page-pagination: true
+output:
+  clean: true
+  dir: ./www

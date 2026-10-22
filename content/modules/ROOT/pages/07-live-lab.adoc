@@ -1,0 +1,157 @@
+= Optional: Review a live controlled checkout service
+include::partial$_attributes.adoc[]
+
+This extension requires a separately provisioned allocation and a reviewed immutable engine image. Its timing depends on real collection windows; it is not included in the core lab's author time estimate. Complete the recorded core path first. Use 2 terminals: keep the authorized port-forward open in the first, and run learner commands in the second.
+
+== Learning objectives
+
+* Collect measured HTTP telemetry and preserve a review reference without entering the engine container or reading a model credential.
+* Separate a deliberate workload change, policy admission, and real model interpretation in the decision brief.
+* Explain what still needs approval after a live collection or model call succeeds.
+
+== Show: Review the service without receiving its credentials
+
+Example Retail's synthetic exercise helped you practice a review. A live controlled service now lets you test whether measurement, collection, and interpretation work together. Requests are real HTTP calls within the lab namespace. The application deliberately changes delays and error responses; it does not simulate actual customers, lost orders, or a production incident.
+
+The operator deploys checkout traffic, private Prometheus, SLOscope, and persistent artifacts. Model access remains server-side. Learners use the API through a loopback port-forward authorized by the Kubernetes API. The HTTP application itself does not gain an authentication layer from this mechanism: access depends on the reviewed allocation permissions and the local workstation boundary. There is no public Route.
+
+Do not execute a shell or Python inside the model-enabled engine. Container execution can expose environment credentials. Operator pod-exec checks are a separate trusted workflow and are not learner instructions. Published catalog access still requires independent regular-user and per-allocation credential qualification.
+
+== Learn: A running pod is not a measured window
+
+Prometheus scrapes the checkout counters and histogram every 10 seconds. The engine selects the declared service, namespace, and lookback, aggregates status codes, and checks actual window coverage. A fresh or restarted Prometheus cannot supply history that has not been collected. Wait for sufficient measured coverage; do not replace missing history with fixtures.
+
+The local HTTP client verifies the live response label, canonical artifact digest, service/namespace, coverage, and measured counts. It saves the reference and comparison receipts in `.lab/live-learner/`, separate from the core lab's synthetic files. A digest detects a change to those artifacts; it does not authenticate their origin or prove a causal explanation.
+
+A controlled phase change may take time to reach the running app, and a collection window may mix phases. Intended failure patterns are not observed ratios. Inspect actual evidence and its provenance before interpreting a change. CPU/memory saturation is not invented when this private scrape lacks those metrics.
+
+== Do: Collect and compare through the API
+
+=== Exercise 1: Confirm the allocation and open the private connection
+
+The facilitator must supply `project_namespace` and a reviewed namespace-scoped learner identity. Confirm that the namespace matches your allocation. Do not use a shared administrator identity to claim that regular-user permissions passed.
+
+In terminal 1:
+
+[source,role="execute",subs="attributes+"]
+----
+SLOSCOPE_NAMESPACE='{namespace}'
+export SLOSCOPE_NAMESPACE
+python3.11 scripts/check-learner-access.py --namespace "$SLOSCOPE_NAMESPACE" &&
+python3.11 scripts/check-learner-readiness.py --namespace "$SLOSCOPE_NAMESPACE" --timeout 120 &&
+oc port-forward --address 127.0.0.1 -n "$SLOSCOPE_NAMESPACE" service/sloscope 18080:8080
+----
+
+Expected result: `learner_access_qualified`, then `learner_workloads_ready` for all 4 deployments, and a forward bound to `127.0.0.1:18080`. Keep it running. The access preflight queries permissions only. The readiness gate reads only the 4 named deployments and waits up to 120 seconds for the current generation and all desired replicas to be updated, ready, and available. Neither check reads Secrets, opens shells, or changes the scenario. A failed check stops the command chain before forwarding. Broad administrator access fails the access check even if the application works. A missing allocation, excessive/missing permissions or unready workload needs facilitator repair; do not switch to an unrelated namespace or bind the forward to `0.0.0.0`.
+
+A loopback forward is reachable from the same host where it runs. In a remote Showroom terminal, that is the terminal host, not your desktop browser. Terminal 2 must share that host/workspace. Future learner browser access needs separately reviewed OAuth/route integration.
+
+In terminal 2, from the lab repository:
+
+[source,role="execute",subs="attributes+"]
+----
+SLOSCOPE_NAMESPACE='{namespace}'
+export SLOSCOPE_NAMESPACE
+python3.11 scripts/live-client.py check --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+Successful JSON reports `status: live_evidence_checked`, the selected namespace/service, coverage, lookback, measured request/histogram counts, and the artifact digest. `model_called: false` means this check did not call a model. Values depend on actual traffic. Missing coverage or a mismatched live label/digest must fail visibly.
+
+*Predict:* Should a freshly started 5-minute scrape immediately pass the full-window check? Explain why waiting for real history differs from selecting a fixture.
+
+Record the reference through the API:
+
+[source,role="execute"]
+----
+python3.11 scripts/live-client.py reference --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+==== Verify the evidence and the reference
+
+The client requests live evidence, asks the server to collect/store the window, reads its baseline, and records a local canonical digest. A successful result reports `reference_recorded` and `baseline_sha256`. A fresh server may initialize its reference; a retained allocation may preserve an existing one. Inspect its provenance or request a fresh allocation if it is not the intended reference.
+
+Keep `.lab/live-learner/baseline-reference.json` and `reference-receipt.json`. Repeating `reference` refuses replacement. Use `compare` for later windows; do not delete or overwrite the reference merely to obtain a desired outcome.
+
+=== Exercise 2: Measure a deliberate change
+
+*Predict:* What must happen after changing the desired phase before the next window is useful? Include asynchronous ConfigMap projection and a comparable lookback in your answer.
+
+Change only the controlled lab scenario in terminal 2:
+
+[source,role="execute"]
+----
+oc patch configmap sloscope-scenario -n "$SLOSCOPE_NAMESPACE" --type merge -p '{"data":{"phase":"regression"}}'
+----
+
+The successful patch changes desired configuration, not proof of application projection or a completed measurement. Allow the configured collection window and projection to settle while traffic continues. Ask the facilitator to investigate unchanged or missing measurements; do not open an engine shell to inspect credentials or replace evidence.
+
+Compare the next window:
+
+[source,role="execute"]
+----
+python3.11 scripts/live-client.py compare --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+==== Verify the comparison and the assessment
+
+A successful receipt reports `reference_preserved_and_drift_recorded`. The client requires server collection to preserve a reference, compares the server baseline with the saved canonical digest, and records the drift signal and its digest locally. A changed local or remote reference is a failure, not a new normal accepted silently.
+
+Inspect `.lab/live-learner/drift-signal.json` and `comparison-receipt.json`. Record actual windows, coverage, and breach identities in your decision brief. Do not assume a particular class or ratio from the requested phase. Distinguish the deliberately controlled setting from a general causal diagnosis of a production incident.
+
+== Optional: Ask for a real model interpretation
+
+This step is explicitly opt-in. The facilitator must approve real model access for the allocation. A model-optional startup profile is an operator convention, not API-level model authorization: if credentials already exist, an API call may use them. Do not infer permission from a ready pod or an available endpoint.
+
+[source,role="execute"]
+----
+python3.11 scripts/live-client.py classify --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+The client submits the saved signal with `mode: live`. A successful result requires both the response header and report constraint to match that exact input digest, plus the expected policy and advisory boundary. It stores the full report and a local receipt with `human_review_required: true`. It does not deploy a recommendation or reveal the server's model token.
+
+A rejected, abstained, or failed request remains nonzero. Missing model configuration should remain a visible error. Do not request a fixture to turn this live check green. Acceptance can include internal validation retries; it is not a first-response quality benchmark. If interpretation fails, retain the measured comparison, record the model outcome as unresolved in your brief, and continue with recovery. Do not retry repeatedly without a facilitator-approved model budget.
+
+=== Verify the interpretation and its limits
+
+Trace the report to the comparison's digest and identify 1 advisory statement that still needs human review. Real execution establishes that this endpoint and input passed the implemented checks. It does not establish model quality across workloads, a true cause, customer impact, or an approved rollout.
+
+== Restore the controlled workload and close the connection
+
+In terminal 2:
+
+[source,role="execute"]
+----
+oc patch configmap sloscope-scenario -n "$SLOSCOPE_NAMESPACE" --type merge -p '{"data":{"phase":"recovery"}}'
+----
+
+Allow projection and a comparable measured window to settle. A successful patch alone is not recovery evidence. In terminal 2, verify the restored workload through fresh observations:
+
+[source,role="execute"]
+----
+python3.11 scripts/live-client.py check --namespace "$SLOSCOPE_NAMESPACE" &&
+python3.11 scripts/live-client.py compare --namespace "$SLOSCOPE_NAMESPACE"
+----
+
+Inspect the new comparison receipt and drift signal. Confirm adequate measured coverage, the same reference digest, and the actual remaining breach list. In this controlled recovery, an empty breach list and `no_significant_drift` support returning the investigation to the service owner; they do not prove customer recovery or approve a release. A mixed window or remaining breaches require another measured window or facilitator investigation, not reference replacement. The client archives the previous comparison and any accepted interpretation before recording recovery.
+
+In terminal 1, stop the port-forward with Ctrl-C. Leave allocation teardown and reference promotion to the reviewed operator workflow. The artifact PVC is retained by default; the core lab's local cleanup does not delete these server resources or a model Secret.
+
+== Takeaway: Preserve the handoff and the access boundary
+
+Add a live-controlled section to your decision brief: operator-provided source/image identity, actual windows and counts, reference digest, measured change, model outcome if requested, and gates still open. Keep it separate from recorded exercises and customer-impact claims.
+
+The proposed catalog learner permissions are read access to assigned workload/pod metadata and the named `sloscope` Service, authorized pod port-forward in that isolated allocation, and patch access only to the named `sloscope-scenario` ConfigMap. They exclude pod execution, Secret reads, deployment mutation, and unrelated workload subresources. No RBAC grants are implemented by this lesson; regular-user enforcement still needs review and testing.
+
+A dev-owner-authorized shared model connection is not an accepted catalog credential design. Per-allocation MaaS tokens or a reviewed broker, quotas, revocation, and data handling remain Publishing House infrastructure gates.
+
+Continue to xref:99-conclusion.adoc[the recommendation and cleanup]. Alert behavior, independent learner acceptance, and Publishing House onboarding need their own evidence.
+
+== Attributes needed
+
+The facilitator must supply `project_namespace` and the tested OpenShift release. A standalone preview provides neither an allocation nor learner permissions.
+
+== Learning outcomes
+
+You should now be able to collect and interpret controlled live evidence through an API without container execution, preserve a reference and its receipts, explain a model outcome without treating it as approval, and identify the remaining access and operational review.
+
+NOTE: Before a later comparison replaces the current signal, or a new classification attempt retries inference on that same signal, the client verifies and preserves the prior signal, comparison receipt and any matching classification under `.lab/live-learner/history/<signal-sha>/<bundle-sha>/`. It then removes the current classification aliases. An abstained new model call therefore leaves no apparently current accepted report. History is bounded at 32 immutable snapshots; at the limit, retain the workdir and start a separate review workdir. Incomplete or mismatched prior artifacts stop the comparison for inspection; they are never silently discarded.

@@ -1,0 +1,42 @@
+---
+- name: Refuse model validation for telemetry-only mode
+  ansible.builtin.assert:
+    that:
+      - sloscope_include_engine | bool or not sloscope_validate_model | bool
+      - sloscope_require_model | bool or not sloscope_validate_model | bool
+    fail_msg: "Deploy the engine with require_model=true before requesting model validation"
+
+- name: Choose the appropriate scoped validation pod
+  ansible.builtin.set_fact:
+    _sloscope_validation_component: "{{ 'sloscope' if sloscope_include_engine | bool else 'checkout-traffic' }}"
+
+- name: Find a running validation pod in the requested namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ sloscope_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/managed-by=sloscope-lab
+      - "app.kubernetes.io/name={{ _sloscope_validation_component }}"
+  register: _sloscope_pods
+
+- name: Require one running validation pod
+  ansible.builtin.assert:
+    that:
+      - _sloscope_pods.resources | length == 1
+      - _sloscope_pods.resources[0].status.phase == 'Running'
+    fail_msg: "Wait for a single ready deployment before live validation"
+
+- name: Validate controlled telemetry and explicitly requested model execution
+  kubernetes.core.k8s_exec:
+    namespace: "{{ sloscope_namespace }}"
+    pod: "{{ _sloscope_pods.resources[0].metadata.name }}"
+    container: "{{ _sloscope_validation_component }}"
+    command: "python /opt/sloscope-lab/validate_live.py --namespace {{ sloscope_namespace }}{{ ' --telemetry-only' if not sloscope_include_engine | bool else '' }}{{ ' --model' if sloscope_validate_model | bool else '' }}"
+  register: _sloscope_live_result
+  changed_when: false
+  failed_when: _sloscope_live_result.rc != 0
+
+- name: Show the bounded validation summary
+  ansible.builtin.debug:
+    msg: "{{ _sloscope_live_result.stdout | from_json }}"

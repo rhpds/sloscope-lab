@@ -1,0 +1,145 @@
+= Review targets and export safely
+include::partial$_attributes.adoc[]
+
+Allow about 25 minutes. This is an author estimate pending an independent learner pilot. Bring your evidence basis and reliability assessment from the previous modules.
+
+== Learning objectives
+
+* Explain why a measurable and renderable threshold can still be an unsuitable recommendation.
+* Recommend a next step that preserves the boundary between recorded demonstrations, live evidence, and operational approval.
+
+== Show: "It exported" is not the decision the team needs
+
+The Example Retail product owner now has a proposed latency threshold: "The tool suggested 595 ms. Can we deploy that alert and call the promotion review complete?"
+
+A preview file cannot answer that question. The team needs an alert that queries the intended measurements, has meaningful behavior, and supports an agreed service objective. A selector for a bucket that does not exist can yield no useful series. A valid selector can still encode an unjustified target. Either mistake could leave the team with a misleading operational signal while customers experience checkout problems.
+
+Your deliverable is a target and release recommendation with explicit evidence gates. Refusing an unsupported export is a useful business outcome: the team knows what to correct before relying on it.
+
+== Learn: Test feasibility, suitability, and operation separately
+
+For the current classic-histogram exporter, *feasibility* includes an exact declared bucket boundary and matching service identity. *Suitability* asks whether the proposed objective serves a customer need and is supported by the evidence. *Operational qualification* tests the real query, alert firing and recovery, missing-data behavior, ownership, and rollout. Passing one step does not establish the others.
+
+=== Worked example: A bucket match is necessary, not sufficient
+
+The recorded proposal contains a 595 ms latency threshold. The supplied histogram has no 0.595 second bucket, so this exporter must refuse the exact selector. Interpolating a percentile for analysis does not create a new measured bucket for export.
+
+The fixture does contain a 1.0 second boundary, equivalent to 1000 ms. That makes a selector possible, not a target recommendation. In the same synthetic distribution, 85000 of 100000 requests are at or below 1 second: *85%*. Its computed p99 is 5000 ms. A reviewer cannot infer an acceptable 1-second customer commitment simply because the bucket exists. The team must decide the required objective and evaluate the distribution against it.
+
+The recorded proposal was authored separately from the computed baseline used in this lab. Editing its bucket demonstrates the export boundary; it does not create an approved end-to-end proposal. The exercises deliberately preserve that distinction.
+
+=== Worked example: A demonstration cannot stand in for live evidence
+
+Suppose a live model endpoint is unavailable during review. Silently substituting a recorded response would let a successful-looking screen hide the missing check. The correct behavior is a visible live failure. An explicitly requested fixture can still teach the workflow, provided it is labeled and excluded from the live acceptance claim.
+
+== Do: Review the proposal before recommending a rollout
+
+=== Exercise 1: Decide what an export result establishes
+
+*Predict:* For 595 ms, choose the result the current exporter should produce: an exact rule, a guessed nearest bucket, or a refusal. Then choose what a successful 1000 ms preview would establish: a bucket match or a customer-approved target.
+
+Before exporting, inspect the latency proposal and contrast it with your reference. The recording is a separate teaching artifact; this lab does not execute the live model target-proposal branch shown in the architecture.
+
+[source,role="execute"]
+----
+.lab/venv/bin/python - <<'PYRECORD'
+import json
+from pathlib import Path
+record = json.loads(Path('.lab/engine/analysis/evals/recorded/web_api_baseline_response.json').read_text())
+latency = next(s for s in record['slos'] if s['sli_type'] == 'latency')
+reference = json.loads(Path('.lab/learner/baseline.json').read_text())
+print('recorded p99 observation (ms):', latency['headroom']['observed_value'])
+print('measured reference p99 (ms):', reference['indicators']['latency']['p99_ms'])
+print('recorded requires_review:', latency['requires_review'])
+print('recorded rationale:', latency['rationale'])
+PYRECORD
+----
+
+Expected comparison: the recording cites 500 ms and a sample count of 500000; your reference computes 5000 ms from a histogram of 100000 requests. The recording's `requires_review: false` flag is also part of that old artifact, not your approval. This mismatch is a reason to withhold acceptance even before testing the bucket. A rendered preview cannot repair the proposal's provenance.
+
+Now challenge the recorded proposal:
+
+[source,role="execute"]
+----
+status=0
+result=$(.lab/venv/bin/python scripts/labctl.py export) || status=$?
+printf '%s\n' "$result"
+[ "$status" -eq 2 ] && [[ "$result" == *"not an observed histogram bucket"* ]] || {
+  echo 'FAIL: did not observe the intended histogram rejection'
+  exit 1
+}
+----
+
+The helper intentionally exits 2. The shell block verifies that exact rejection and lets you continue. Expected JSON has `status: rejected`, HTTP status 422, and a message that the threshold is not an observed histogram bucket.
+
+==== Verify the refusal and the decision
+
+Technical check: the rejection identifies the missing measured bucket. An unrelated runtime error does not satisfy this check.
+
+Decision check: record *hold this export and review the target/evidence mapping*. Do not weaken the exporter to obtain a file. Possible real follow-ups include instrumenting a required boundary or choosing a justified measurable threshold, each with appropriate review. This fixture alone does not choose between them.
+
+For the format exercise only, edit the recorded proposal to use the existing 1000 ms boundary and inspect the resulting preview:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py export --bucket-ms 1000
+.lab/venv/bin/python -m json.tool .lab/learner/export-preview.json
+----
+
+Expected message:
+
+----
+Rendered preview with observed histogram bucket; targets still require human review
+----
+
+WARNING: The 1000 ms value is a deliberate format exercise, not a recommended SLO. The proposal remains a manually edited recording, not a proposal accepted against this baseline. No commands here deploy the rules.
+
+==== Verify the preview and the recommendation
+
+Technical check: inspect the Prometheus rule text for `checkout-api`, `payments`, and the `1.0` second bucket. The exercise saves a preview receipt tied to source, evidence, and preview hashes. These fields make the local artifact reviewable; they do not prove real query or alert behavior.
+
+Decision check: explain why the worked example's 85% below 1 second and 5000 ms p99 matter to target suitability. Do not approve or reject a customer commitment without its required success fraction, window, and business need. A defensible recommendation is to retain the preview for review while withholding deployment approval until those requirements and operational tests are supplied.
+
+=== Exercise 2: Keep the evidence label attached to the result
+
+*Predict:* With no model configured, should a default live request fail visibly or return a recording? What acceptance claim, if any, could you make about a separately requested fixture?
+
+The boundary check removes model configuration from its own process and calls the actual HTTP handlers in process:
+
+[source,role="execute"]
+----
+.lab/venv/bin/python scripts/labctl.py boundary
+----
+
+Expected message:
+
+----
+PASS: default live mode returns 503 without a model; explicit fixture returns labeled demonstration
+----
+
+==== Verify the boundary and the acceptance claim
+
+Technical check: the default request fails with 503, and the explicit fixture response carries `X-SLOscope-Mode: fixture`. This is an in-process handler check, not a remote network or real-model test.
+
+Decision check: the recording demonstrates the workflow only. Do not write "live interpretation validated" in the decision brief. A real model endpoint must be qualified separately, and failed or abstained execution must remain visible.
+
+== Takeaway: Make the recommendation reviewable
+
+In the *Target and release recommendation* section of your decision brief, record:
+
+* Your disposition for the unsupported 595 ms export and why a refusal is useful.
+* What the 1000 ms preview establishes, what the measured distribution adds to the discussion, and why the target still needs a customer requirement.
+* The live evidence and operational checks needed before anyone relies on the result: approved targets, real metric bindings, alert firing/recovery and missing-data tests, a supported model path where used, and a named reviewer/owner.
+* Which conclusions are demonstrated by synthetic or recorded artifacts and which remain pending.
+
+CPU/memory alert export is still blocked until qualified metric bindings exist. OpenSLO output still needs validation in the intended consumer. Neither should be listed as accepted just because another preview rendered.
+
+Your final recommendation should let the product owner see a concrete next step and let the technical reviewer trace the reasoning. Continue to the optional MCP module to inspect the same bounded artifacts through another interface, or go to the conclusion to assemble your brief, verify the core checkpoints, and clean up.
+
+== Troubleshooting
+
+If the 595 ms export succeeds, retain the preview and report the regression. If the 1000 ms preview fails, inspect the error and service/namespace identity. Do not disable the bucket check to make the demonstration succeed. If a live request returns a fixture without explicit opt-in, stop and preserve the response headers.
+
+== Learning outcomes
+
+You should now be able to distinguish feasibility from target suitability and operational acceptance, explain when refusing an export is the right next step, and give a recommendation that does not promote a recorded demonstration into live evidence.

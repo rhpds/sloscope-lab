@@ -1,0 +1,6 @@
+:lab-title: Make checkout reliability decisions with SLOscope
+:ocp_version: {openshift_version}
+:user: {user_name}
+:namespace: {project_namespace}
+:lab_repo: {lab_repository_url}
+:engine_repo: {engine_repository_url}
